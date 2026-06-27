@@ -1,0 +1,25 @@
+{
+  "event_id": "evt_sanitized_0002",
+  "event_type": "permit_issued",
+  "case_id": "case_sanitized_e4_demo_2026",
+  "seq": 44,
+  "prev_hash": "1f4a16fdb34060666fe14245c4cafd8e27302f9f1774c77af345b04ea182eaf7",
+  "payload": {
+    "permit_id": "permit_sanitized_001",
+    "scope": "gmail.send",
+    "expires_at": "2026-06-27T12:00:00Z"
+  },
+  "signed": {
+    "signer_key_id": "key_sanitized_demo_001",
+    "algorithm": "Ed25519",
+    "signature": "SRCvOfaJjXiFHmo0kEMQjEBbkUuuhRFlP7lcqI0y6ydqujo+Sl+JSe7F7w/+8YpNzvfdnqrHKFamLDUxRN5oCg==",
+    "signed_headers": [
+      "event_id",
+      "event_type",
+      "case_id",
+      "seq",
+      "prev_hash",
+      "payload"
+    ]
+  }
+}

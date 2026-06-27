@@ -1,0 +1,10 @@
+[
+  {
+    "key_id": "key_sanitized_demo_001",
+    "public_key_hex": "d0ee362f70c43eb0070d0c14f2f9bece50b4d433ccde47bf8791d91f6d9b9915",
+    "status": "active",
+    "algorithm": "Ed25519",
+    "created_at": "2026-06-27T00:00:00Z",
+    "description": "Demo key for E4 fixture \u2014 NOT production"
+  }
+]

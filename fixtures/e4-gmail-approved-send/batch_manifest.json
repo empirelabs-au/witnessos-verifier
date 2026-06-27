@@ -1,0 +1,20 @@
+{
+  "batch_id": "batch_sanitized_demo_e4_001",
+  "signing_key_id": "key_sanitized_demo_001",
+  "case_id": "case_sanitized_e4_demo_2026",
+  "root": "42ccfc237cb975679d3567fc32208faadf0c18508e3bee0e10208e92ba2029a3",
+  "prev_root": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "event_ids": [
+    "evt_sanitized_0000",
+    "evt_sanitized_0001",
+    "evt_sanitized_0002",
+    "evt_sanitized_0003",
+    "evt_sanitized_0004",
+    "evt_sanitized_0005",
+    "evt_sanitized_0006"
+  ],
+  "start_seq": 42,
+  "end_seq": 48,
+  "signed_at": "2026-06-27T04:15:00Z",
+  "signature": "HLRlNE9r0eZNsHjckXkWpjCQ+ur2HIm65r4WHAeemfi3DQmpfY74iyb1N3jD4nuVztqIBo9p0sKth2Lm5ANHDw=="
+}

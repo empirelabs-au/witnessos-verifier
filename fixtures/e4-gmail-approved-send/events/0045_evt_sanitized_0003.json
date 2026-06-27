@@ -1,0 +1,25 @@
+{
+  "event_id": "evt_sanitized_0003",
+  "event_type": "credential_brokered",
+  "case_id": "case_sanitized_e4_demo_2026",
+  "seq": 45,
+  "prev_hash": "96ead5b42d8d4c94ce92c761d8b481dc7f44b4a68ba5421e293928dda21f0db5",
+  "payload": {
+    "provider": "gmail",
+    "credential_id": "cred_sanitized_xyz",
+    "token_type": "OAuth2"
+  },
+  "signed": {
+    "signer_key_id": "key_sanitized_demo_001",
+    "algorithm": "Ed25519",
+    "signature": "gLPHiiOBXxNXAz+6p3vAkbRmzLxk8iCZOlb5cWYiGQp3zaWv/2Bgw0tj0kXaZ4OgqDOWRNg28IAIJzeOUajnBQ==",
+    "signed_headers": [
+      "event_id",
+      "event_type",
+      "case_id",
+      "seq",
+      "prev_hash",
+      "payload"
+    ]
+  }
+}

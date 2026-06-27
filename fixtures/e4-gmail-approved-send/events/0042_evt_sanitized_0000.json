@@ -1,0 +1,26 @@
+{
+  "event_id": "evt_sanitized_0000",
+  "event_type": "action_requested",
+  "case_id": "case_sanitized_e4_demo_2026",
+  "seq": 42,
+  "prev_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "payload": {
+    "action": "send_email",
+    "to": "design-partner@example.com",
+    "subject": "Welcome",
+    "body_sha256": "placeholder_hash_01"
+  },
+  "signed": {
+    "signer_key_id": "key_sanitized_demo_001",
+    "algorithm": "Ed25519",
+    "signature": "6ZbXNVHD3/pGO3T46VX8AFSlnquA/zRKfYtsTTNG7fqsmOyODEyJpyjC2K7+Bi55gyKOoB8U6ryaZBBPghY1CA==",
+    "signed_headers": [
+      "event_id",
+      "event_type",
+      "case_id",
+      "seq",
+      "prev_hash",
+      "payload"
+    ]
+  }
+}

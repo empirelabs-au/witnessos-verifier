@@ -1,0 +1,26 @@
+{
+  "event_id": "evt_sanitized_0005",
+  "event_type": "provider_confirmed",
+  "case_id": "case_sanitized_e4_demo_2026",
+  "seq": 47,
+  "prev_hash": "090cc06d7b453a9881e1f31fbf2b6fadbc6e8add8f134353d3f929ab628fce88",
+  "payload": {
+    "provider": "gmail",
+    "status": "delivered",
+    "accepted_at": "2026-06-27T04:15:00Z",
+    "recipient_server": "mx.example.com"
+  },
+  "signed": {
+    "signer_key_id": "key_sanitized_demo_001",
+    "algorithm": "Ed25519",
+    "signature": "7IL8c7tU2G83u4ufaCBitdcAPrVfBK2RFEWU+hAvVy59I/wJ+dd8sq6BITlxgrzSuZtwxZsRmv9xuVlYs/0VDg==",
+    "signed_headers": [
+      "event_id",
+      "event_type",
+      "case_id",
+      "seq",
+      "prev_hash",
+      "payload"
+    ]
+  }
+}

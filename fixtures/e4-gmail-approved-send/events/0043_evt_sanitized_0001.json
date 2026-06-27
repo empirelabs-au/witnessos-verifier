@@ -1,0 +1,27 @@
+{
+  "event_id": "evt_sanitized_0001",
+  "event_type": "policy_checked",
+  "case_id": "case_sanitized_e4_demo_2026",
+  "seq": 43,
+  "prev_hash": "66e6812f96c95b17d72e4df1b36f41ea0241071afc98332ede7bdfb6954c6c5c",
+  "payload": {
+    "policy": "external_communications",
+    "allowed": true,
+    "matched_rules": [
+      "allowlist_recipient"
+    ]
+  },
+  "signed": {
+    "signer_key_id": "key_sanitized_demo_001",
+    "algorithm": "Ed25519",
+    "signature": "W3roPSl2tghcy58YhLXYilOKw5O8ybFA0r894wjPP6uPqFLjJmEHViqG8nHZzsnkdQ+LhBt9GU+HCBa9Z3ouCA==",
+    "signed_headers": [
+      "event_id",
+      "event_type",
+      "case_id",
+      "seq",
+      "prev_hash",
+      "payload"
+    ]
+  }
+}

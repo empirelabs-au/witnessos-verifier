@@ -1,0 +1,25 @@
+{
+  "event_id": "evt_sanitized_0006",
+  "event_type": "case_closed",
+  "case_id": "case_sanitized_e4_demo_2026",
+  "seq": 48,
+  "prev_hash": "6dbd545ed1c194bb21b9774909ac3b65e9c2588effd44d39781a6d097f6903d2",
+  "payload": {
+    "duration_ms": 1234,
+    "total_cost_nanodollars": 0,
+    "final_status": "completed"
+  },
+  "signed": {
+    "signer_key_id": "key_sanitized_demo_001",
+    "algorithm": "Ed25519",
+    "signature": "dw5sPX5Z3HullKztcLsKYXXfPqwJcfNCrDRPGo7wZIM1yii3STX2RL244xDDI7biRNT4WPuVy/dmOuRu/gLCDQ==",
+    "signed_headers": [
+      "event_id",
+      "event_type",
+      "case_id",
+      "seq",
+      "prev_hash",
+      "payload"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "leaf_index": 0,
+  "leaf_hash": "145d7a323d77e48d5ca131798f34dc2676d3bc52cdb998c05f37e75db94c1fb6",
+  "root": "42ccfc237cb975679d3567fc32208faadf0c18508e3bee0e10208e92ba2029a3",
+  "proof_hashes": [
+    "59a9e25ca4b1a1faddda6390c703d42b86284de2933524ddf0608bb13e73c0ee",
+    "a0b5f241ae901ad6a20bf96de86469e5c4cb071b3e261131935f3a166ef1c93a",
+    "6412fdf7d4729c4ca23d0e909fd280de7601bb91dd43d916331a7c5432d2f9d6"
+  ],
+  "tree_size": 7
+}
