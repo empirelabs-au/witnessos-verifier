@@ -8,7 +8,7 @@ This is a standalone module — no witnessos-gateway dependency.
 
 import hashlib
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 
 class DerError(Exception):
@@ -175,3 +175,179 @@ def format_oid(oid: Tuple[int, ...]) -> str:
 
 def sha256(data: bytes) -> bytes:
     return hashlib.sha256(data).digest()
+
+
+# --- Input Validation & Hardening ---
+
+MAX_DER_SIZE = 1_000_000  # 1 MB max timestamp token
+MAX_RECURSION_DEPTH = 32
+ALLOWED_OIDS = {
+    OID_PKCS7_SIGNED_DATA,
+    OID_TST_INFO,
+    OID_SHA256,
+    OID_SHA256_RSA,
+    OID_RSA_ENCRYPTION,
+    OID_CONTENT_TYPE,
+    OID_MESSAGE_DIGEST,
+    OID_SIGNING_TIME,
+}
+
+
+def validate_der_input(data: bytes, strict: bool = False) -> List[str]:
+    """Validate raw DER input before parsing.
+
+    Checks:
+      - Size limits
+      - Basic structure (must be a SEQUENCE)
+      - No trailing garbage (strict mode)
+      - Length coherence (no lengths exceeding data bounds)
+
+    Returns:
+        List of validation issues (empty = valid).
+    """
+    issues: List[str] = []
+
+    if not data:
+        issues.append("Empty DER input")
+        return issues
+
+    if len(data) > MAX_DER_SIZE:
+        issues.append(
+            f"DER input exceeds max size: {len(data)} > {MAX_DER_SIZE}"
+        )
+
+    # Must start with a SEQUENCE tag (0x30)
+    if data[0] != 0x30:
+        issues.append(
+            f"Expected SEQUENCE tag (0x30), got 0x{data[0]:02x}"
+        )
+        return issues
+
+    # Validate length field
+    try:
+        total_len, len_bytes = _decode_length(data, 1)
+        expected_total = 1 + len_bytes + total_len
+
+        if expected_total > len(data):
+            issues.append(
+                f"Declared length exceeds data: {expected_total} > {len(data)}"
+            )
+
+        if strict and expected_total < len(data):
+            issues.append(
+                f"Trailing garbage after DER data: "
+                f"{len(data) - expected_total} extra bytes"
+            )
+    except DerError as e:
+        issues.append(f"Invalid DER length: {e}")
+
+    return issues
+
+
+def _decode_length(data: bytes, pos: int) -> Tuple[int, int]:
+    """Decode a DER length field. Returns (value, bytes_consumed)."""
+    if pos >= len(data):
+        raise DerError("Unexpected end of data reading length")
+
+    b = data[pos]
+    if b < 0x80:
+        return b, 1
+
+    num_octets = b & 0x7F
+    if num_octets == 0:
+        raise DerError("Indefinite length not supported")
+    if num_octets > 4:
+        raise DerError(f"Length too large: {num_octets} octets")
+
+    length = 0
+    for i in range(num_octets):
+        if pos + 1 + i >= len(data):
+            raise DerError("Length field truncated")
+        length = (length << 8) | data[pos + 1 + i]
+
+    # Any long-form encoding for values under 128 is non-minimal DER
+    if length < 128:
+        raise DerError(
+            f"Non-minimal length encoding: {length} "
+            f"encoded in long form ({num_octets} octets)"
+        )
+
+    return length, 1 + num_octets
+
+
+def validate_tst_info_fields(raw_tst_info: bytes) -> List[str]:
+    """Validate TSTInfo for duplicate/missing fields.
+
+    The TSTInfo must contain exactly one each of:
+      version, policy, messageImprint, serialNumber, genTime
+    and at most one of: nonce, accuracy.
+    """
+    issues: List[str] = []
+    required_fields = {"version", "policy", "messageImprint", "serialNumber", "genTime"}
+    seen_fields: Set[str] = set()
+
+    cursor = DerCursor(raw_tst_info)
+    try:
+        tst_seq = read_sequence(cursor)
+
+        # version (INTEGER)
+        read_integer(tst_seq)
+        seen_fields.add("version")
+
+        # policy (OID)
+        read_oid(tst_seq)
+        seen_fields.add("policy")
+
+        # messageImprint (SEQUENCE)
+        mi_seq = read_sequence(tst_seq)
+        seen_fields.add("messageImprint")
+
+        # serialNumber (INTEGER)
+        read_integer(tst_seq)
+        seen_fields.add("serialNumber")
+
+        # genTime (GeneralizedTime)
+        read_generalized_time(tst_seq)
+        seen_fields.add("genTime")
+
+        # Optional: nonce (INTEGER)
+        if not tst_seq.eoi():
+            tag = tst_seq.peek_tag()
+            if tag == 0x02:
+                if "nonce" in seen_fields:
+                    issues.append("Duplicate nonce field in TSTInfo")
+                read_integer(tst_seq)
+                seen_fields.add("nonce")
+
+        # Optional: accuracy
+        if not tst_seq.eoi():
+            tag = tst_seq.peek_tag()
+            if tag == 0x30:
+                if "accuracy" in seen_fields:
+                    issues.append("Duplicate accuracy field in TSTInfo")
+                read_sequence(tst_seq)
+                seen_fields.add("accuracy")
+
+        # Check for unexpected trailing fields
+        if not tst_seq.eoi():
+            issues.append(
+                f"Unexpected trailing data in TSTInfo "
+                f"({tst_seq.remaining()} bytes remaining)"
+            )
+
+        # Check all required fields present
+        missing = required_fields - seen_fields
+        if missing:
+            issues.append(f"Missing required TSTInfo fields: {missing}")
+
+    except DerError as e:
+        issues.append(f"TSTInfo validation error: {e}")
+
+    return issues
+
+
+def validate_oid_acceptance(oid: Tuple[int, ...]) -> Optional[str]:
+    """Check if an OID is in the allowed set. Returns None if accepted, or error string."""
+    if oid not in ALLOWED_OIDS:
+        return f"OID {format_oid(oid)} not in allowed set"
+    return None
