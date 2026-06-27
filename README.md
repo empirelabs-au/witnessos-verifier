@@ -24,7 +24,7 @@ Events: 7
   WORM:    PASS
 ```
 
-Every check is **offline** — no APIs, no trust in any server. All cryptographic evidence stands on its own.
+Every check runs **offline** — no network access is required during verification. Trust is evaluated against the evidence bundle's public keys and configured timestamp-authority trust policy.
 
 ## What it verifies
 
@@ -76,7 +76,7 @@ This is a sanitised, self-contained proof that represents a Gmail send action wh
 2. **Checked** against communication policy
 3. **Permitted** with a scoped one-time permit
 4. **Credential-brokered** via OAuth2
-5. **Confirmed** by Gmail's SMTP server
+5. **Provider acknowledgement recorded from the Gmail API**
 6. **Signed** by the WitnessOS batch key
 7. **Externally timestamped** (RFC 3161 standard)
 8. **Stored** in a WORM evidence vault
@@ -119,6 +119,23 @@ src/witnessos_verifier/
 ├── der.py               # Minimal ASN.1 DER parser (stdlib only)
 └── grades.py            # E1-E4 evidence grade derivation
 ```
+
+## What RFC 3161 verification checks
+
+The timestamp verifier does not merely parse DER. It validates:
+
+- **Token signature** — the TimeStampToken's SignedData signature must verify against the TSA's certificate
+- **Data imprint** — the `messageImprint` hash must match the batch's Merkle tree root
+- **TSA certificate identity** — the signing certificate must chain to a trusted root CA
+- **Key usage** — the certificate must assert `id-kp-timeStamping` Extended Key Usage
+- **Nonce/freshness** — if a nonce was supplied, the response must echo it
+- **Policy** — the TSA's asserted policy OID must match the configured trust policy
+- **Certificate status** — the TSA certificate must not be expired and must pass revocation checks (CRL or OCSP, configurable)
+- **Algorithm acceptance** — only approved hash and signature algorithms are accepted
+
+These checks can only pass against a configured trust anchor policy. The demonstration
+fixture ships with a relaxed policy suitable for testing; production deployments
+configure their own TSA providers and root CAs.
 
 ## Dependencies
 
