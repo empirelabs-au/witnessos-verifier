@@ -66,6 +66,9 @@ class VerifyResult:
         if self.timestamp_result:
             status = "PASS" if self.timestamp_result.valid else "FAIL"
             lines.append(f"  TSA:     {status}")
+            if self.timestamp_result.trust_policy_result:
+                tr = self.timestamp_result.trust_policy_result
+                lines.append(f"  Trust:   {tr.trust_level} → {tr.revocation_status.value}")
 
         if self.worm_result:
             status = "PASS" if self.worm_result.valid else "FAIL"

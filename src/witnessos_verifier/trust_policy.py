@@ -21,6 +21,14 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+
+class RevocationStatus(Enum):
+    """Status of CRL/OCSP revocation checking for this verification."""
+    NOT_REQUIRED = "not_required"   # Demo or Standard level
+    CHECKED = "checked"              # CRL/OCSP fetched and passed
+    CACHED = "cached"                # Previously validated, cache used
+    UNAVAILABLE = "unavailable"      # Could not check (network, config)
+    FAIL_CLOSED = "fail_closed"      # STRICT mode, unavailable → failed
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
@@ -166,8 +174,40 @@ class TrustPolicy:
         return self.level in (TrustLevel.STANDARD, TrustLevel.STRICT)
 
     def requires_revocation_check(self) -> bool:
-        """Whether CRL/OCSP revocation checking is required."""
+        """Whether CRL/OCSP revocation checking is required.
+
+        STANDARD never requires revocation.
+        STRICT requires it when check_revocation is enabled.
+        """
         return self.level == TrustLevel.STRICT and self.check_revocation
+
+    def can_check_revocation(self) -> bool:
+        """Whether revocation can actually be checked right now.
+
+        Returns False when:
+          - No CRL URLs or OCSP responders configured
+          - cryptography package not available (can't verify responses)
+
+        In STRICT mode, if `requires_revocation_check()` is True and
+        this returns False, the verification MUST fail-closed.
+        """
+        has_endpoints = bool(self.crl_urls or self.ocsp_responders)
+        if not has_endpoints:
+            return False
+        try:
+            import cryptography  # noqa: F401
+            return True
+        except ImportError:
+            return False
+
+    @property
+    def effective_revocation_status(self) -> RevocationStatus:
+        """Determine the revocation status for this policy and environment."""
+        if not self.requires_revocation_check():
+            return RevocationStatus.NOT_REQUIRED
+        if not self.can_check_revocation():
+            return RevocationStatus.FAIL_CLOSED
+        return RevocationStatus.CHECKED  # Will be refined after actual fetch
 
 
 # --- Trust Policy Result ---
@@ -180,6 +220,8 @@ class TrustPolicyResult:
     checks: List[str] = field(default_factory=list)    # Passed checks
     failures: List[str] = field(default_factory=list)   # Failed checks
     skips: List[str] = field(default_factory=list)      # Skipped (e.g., demo mode)
+    revocation_status: RevocationStatus = RevocationStatus.NOT_REQUIRED
+    trust_level: str = "DEMO"
 
     def add_pass(self, check: str) -> None:
         self.checks.append(check)

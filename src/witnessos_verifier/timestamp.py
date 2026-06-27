@@ -30,7 +30,7 @@ from .der import (
     read_utc_time, read_generalized_time, read_null, read_bit_string,
     format_oid, sha256,
 )
-from .trust_policy import TrustPolicy, TrustPolicyResult, TrustLevel, DEFAULT_POLICY
+from .trust_policy import TrustPolicy, TrustPolicyResult, TrustLevel, RevocationStatus, DEFAULT_POLICY
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,20 @@ def verify_timestamp(
         policy = DEFAULT_POLICY
 
     errors: List[str] = []
-    trust_result = TrustPolicyResult(passed=True)
+    trust_result = TrustPolicyResult(
+        passed=True,
+        revocation_status=policy.effective_revocation_status,
+        trust_level=policy.level.value.upper(),
+    )
+
+    # --- Fail-closed gate: STRICT with no revocation capability ---
+    if trust_result.revocation_status == RevocationStatus.FAIL_CLOSED:
+        trust_result.add_fail(
+            "STRICT trust level requires revocation checking but "
+            "CRL/OCSP is unavailable. Fail-closed. Configure crl_urls "
+            "or ocsp_responders and install cryptography."
+        )
+        trust_result.passed = False
 
     # --- TSA provider allowlist ---
     if not policy.is_tsa_allowed(tsa_url):
