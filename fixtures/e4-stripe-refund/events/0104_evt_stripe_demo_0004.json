@@ -1,0 +1,18 @@
+{
+  "case_id": "demo_stripe_refund_2026_001",
+  "event_id": "evt_stripe_demo_0004",
+  "event_type": "provider.acknowledged",
+  "payload": {
+    "confirmation_method": "api_response",
+    "http_status": 200,
+    "provider_operation_id": "re_demo_0001",
+    "provider_receipt_hash": "demo_stripe_receipt_hash_001",
+    "stripe_request_id": "req_demo_0001"
+  },
+  "prev_hash": "5ac597e52793e3962c3660cefd7b4e8ee4da62fe5a5513d9991ec00223c52429",
+  "seq": 104,
+  "signed": {
+    "key_id": "key_stripe_demo_001",
+    "signature": "e+p9lyDtNZZko6a55SVYxbfrp4R53pDXp+72LKswLXixOM8iTC3m6OOq3lZbzINCZloIvW2yxARdwtLFbI5RAg=="
+  }
+}

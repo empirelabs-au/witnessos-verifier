@@ -1,0 +1,10 @@
+[
+  {
+    "algorithm": "Ed25519",
+    "created_at": "2026-06-28T05:37:30Z",
+    "description": "Demo key for Stripe E4 fixture \u2014 NOT production",
+    "key_id": "key_stripe_demo_001",
+    "public_key_hex": "03aa70386ec38be65861c87f43e2cf6f4269a86fd6af03ffecbb5f42edb7cce7",
+    "status": "active"
+  }
+]

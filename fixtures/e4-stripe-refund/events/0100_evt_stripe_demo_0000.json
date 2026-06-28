@@ -1,0 +1,21 @@
+{
+  "case_id": "demo_stripe_refund_2026_001",
+  "event_id": "evt_stripe_demo_0000",
+  "event_type": "action.requested",
+  "payload": {
+    "agent_id": "spiffe://empirelabs/demo/stripe-agent",
+    "canonical_request_hash": "demo_ch_placeholder_0000",
+    "idempotency_key": "demo_idemp_0000",
+    "operator_id": "operator_demo",
+    "operator_identity_source": "test_mode",
+    "risk_class": "refund",
+    "target_resource": "refund",
+    "target_system": "stripe"
+  },
+  "prev_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "seq": 100,
+  "signed": {
+    "key_id": "key_stripe_demo_001",
+    "signature": "ppR8jiAHmWNRiuRphMAwBOc0oKD8dUSCu6VK4QskJjPzbJS3hyOFfgKFtgKioKYGIvW9TyojxaWkwT+Bz0JpBw=="
+  }
+}

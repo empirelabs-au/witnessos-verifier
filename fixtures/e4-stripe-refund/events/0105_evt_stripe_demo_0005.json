@@ -1,0 +1,24 @@
+{
+  "case_id": "demo_stripe_refund_2026_001",
+  "event_id": "evt_stripe_demo_0005",
+  "event_type": "provider.confirmed",
+  "payload": {
+    "amount": 1500,
+    "charge_id": "ch_demo_0001",
+    "confirmation_method": "api_response",
+    "currency": "aud",
+    "independently_verifiable": false,
+    "payment_intent_id": "pi_demo_0001",
+    "provider_operation_id": "re_demo_0001",
+    "provider_receipt_hash": "demo_stripe_receipt_hash_001",
+    "raw_evidence_blob_hash": "demo_worm_hash_001",
+    "refund_id": "re_demo_0001",
+    "status": "succeeded"
+  },
+  "prev_hash": "6f8e64e4e9efb332a1b5d72f1341735317e7de8b86ca2b3d1351061a1b6844c8",
+  "seq": 105,
+  "signed": {
+    "key_id": "key_stripe_demo_001",
+    "signature": "6OfIDQIvH6hHvh5D47ZX8e+nP7/KNQdGA8dchX+BuXyHsX4yD9mRbIBLOLr2l6nimtSsRaGpBWWOJN0Sp1sHAA=="
+  }
+}

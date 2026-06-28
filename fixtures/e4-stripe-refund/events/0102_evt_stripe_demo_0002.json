@@ -1,0 +1,22 @@
+{
+  "case_id": "demo_stripe_refund_2026_001",
+  "event_id": "evt_stripe_demo_0002",
+  "event_type": "approval.granted",
+  "payload": {
+    "action_summary": "Refund AUD 15.00 on charge ch_demo_0001",
+    "approval_expires_at": "2026-06-27T04:16:00Z",
+    "approval_id": "demo_approval_001",
+    "approval_scope_hash": "demo_scope_hash_001",
+    "human_principal": "demo_operator@example.com",
+    "permit_jti": "demo_permit_001",
+    "target_amount": 1500,
+    "target_charge": "ch_demo_0001",
+    "target_currency": "aud"
+  },
+  "prev_hash": "25b615533c68177e514c5f835a3a3114a70ee9fbd0d3d8b5832a588b8c1aee2f",
+  "seq": 102,
+  "signed": {
+    "key_id": "key_stripe_demo_001",
+    "signature": "BdZVzb2FFSfNn4uRzZ/10UsXbxP20+hTLudd/kzttYsMo4RDe8R4hNvDZlneDQpq4un/DVvPDQ793J6SJE9vAg=="
+  }
+}

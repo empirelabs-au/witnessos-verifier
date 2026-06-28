@@ -1,0 +1,16 @@
+{
+  "case_id": "demo_stripe_refund_2026_001",
+  "event_id": "evt_stripe_demo_0003",
+  "event_type": "dispatch.started",
+  "payload": {
+    "destination": "stripe_api",
+    "endpoint": "https://api.stripe.com/v1/refunds",
+    "permit_jti": "demo_permit_001"
+  },
+  "prev_hash": "4498cb71a366a2c20691b33900755ff5d3986c99142396b89b48cdf331b065d4",
+  "seq": 103,
+  "signed": {
+    "key_id": "key_stripe_demo_001",
+    "signature": "dHeZFtjSNHM2g3t7QJphtQLIz/Ai+OmuwJ2PibZTfRoHOvyIwKrp3TsB6Uvp90lq8GjFXUq6Pt3+zX0E2t4GAw=="
+  }
+}

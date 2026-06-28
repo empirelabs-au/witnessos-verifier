@@ -1,0 +1,22 @@
+{
+  "batch_id": "batch_stripe_demo_e4_001",
+  "case_id": "demo_stripe_refund_2026_001",
+  "file_count": 13,
+  "file_hashes": {
+    "README.md": "ba7bd339e882418001b677d1b13b38f7535ff7ffdcd186560df3ff45176058ab",
+    "batch_manifest.json": "30ef1eab2353ca4738aca8888622ae0ddfc9b64c5132ded20f1c9a331dd0b911",
+    "case_manifest.json": "19ab541d8894ca48296566ccb735b174921f6f2223dc56eb6010de2c434e1217",
+    "events/0100_evt_stripe_demo_0000.json": "c06a8e0c7b0712c0904242b0b66dd9fe4ca507d0a60ec070e54f50f4304a1561",
+    "events/0101_evt_stripe_demo_0001.json": "1af475cac62237880849d02be2afaa720c801ef023765df728b235979c37cd82",
+    "events/0102_evt_stripe_demo_0002.json": "b2cad53ff67c119811d1cb2925978e00e8195886feee1824f68cce9d329f5de3",
+    "events/0103_evt_stripe_demo_0003.json": "7fbac75f362afdb64d8b26a68979b67abd32193442e1558b5bf69a14e26c9f81",
+    "events/0104_evt_stripe_demo_0004.json": "5f04b3f9416ba4fbc6d5d54d3387925b9d162d82305a970f10234557c217e851",
+    "events/0105_evt_stripe_demo_0005.json": "0cd516d37bdfdb19916bfb03767a68559676ee28ada8d682904ec219c5c6398b",
+    "events/0106_evt_stripe_demo_0006.json": "a4169ab7443bb3372b728de0039e4a2b33316ed0cedaa7d4baa945cbf25967c4",
+    "keys.json": "dff953fba15e123e1465e792f5efdb5256840d62d71ec7b708411eb54591fa95",
+    "merkle_proof.json": "9f21e73dcd2af32b8e06896f959c26da567ff5f0ff9323c021669fd8512e73d0",
+    "timestamp/batch_timestamp.tsr": "a72c4f727d60a1fc78ab383b03ba2a8cbc5899a16f051223cdb895a07bba539f"
+  },
+  "stored_at": "2026-06-28T05:37:30Z",
+  "stored_hash": "490f8667a2036f4d34b2838cb07231bacbada0ca5f0c6dc52999948d5bd0d81f"
+}

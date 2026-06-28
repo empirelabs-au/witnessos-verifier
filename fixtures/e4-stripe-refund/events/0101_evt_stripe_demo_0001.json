@@ -1,0 +1,21 @@
+{
+  "case_id": "demo_stripe_refund_2026_001",
+  "event_id": "evt_stripe_demo_0001",
+  "event_type": "policy.evaluated",
+  "payload": {
+    "decision": "approval_required",
+    "matched_rules": [
+      "financial_actions.refund.under_500"
+    ],
+    "policy_bundle_hash": "demo_policy_bundle_hash_001",
+    "policy_engine_version": "0.2.0",
+    "risk_class": "refund",
+    "rule_id": "stripe-financial-refund-v1"
+  },
+  "prev_hash": "cd7fe10deb6cbbb09362075cee389553f75557f32101236b8d46cb7c40bca4d5",
+  "seq": 101,
+  "signed": {
+    "key_id": "key_stripe_demo_001",
+    "signature": "5iRLdFqsLhaZPyYzcNIGHfXdbFlURH4wBcB8Rcq9viBACbexCyU+nOaMr2TqsfdxGJOLv8cEQFBZjzeCB5/1DQ=="
+  }
+}

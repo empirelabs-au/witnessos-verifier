@@ -1,0 +1,16 @@
+{
+  "case_id": "demo_stripe_refund_2026_001",
+  "event_id": "evt_stripe_demo_0006",
+  "event_type": "anchor.completed",
+  "payload": {
+    "anchored_at": "2026-06-28T05:37:30Z",
+    "merkle_checkpoint": "demo_merkle_root_placeholder",
+    "timestamp_token": "pending_tsa"
+  },
+  "prev_hash": "dbdc4d59aa9069ad855b052fdcd0847889f77552176ae034a42460deb3b976ee",
+  "seq": 106,
+  "signed": {
+    "key_id": "key_stripe_demo_001",
+    "signature": "wOQkXsZOv6zoh65493Wib7C98C2IJeWqCgBVqlJoiplYilL6f3243EL8+LG+SHbBd53/SW4k6g1jfexzcW7ADQ=="
+  }
+}
