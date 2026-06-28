@@ -66,11 +66,11 @@ witnessos-verifier verify ./path/to/evidence-bundle/
 witnessos-verifier --version
 ```
 
-## Example fixture
+## Example fixtures
 
-An **externally timestamped demonstration evidence bundle** is included at `fixtures/e4-gmail-approved-send/`.
+### Gmail send — `fixtures/e4-gmail-approved-send/`
 
-This is a sanitised, self-contained proof that represents a Gmail send action which was:
+A sanitised, self-contained demonstration bundle representing a Gmail send action that was:
 
 1. **Requested** by an AI agent
 2. **Checked** against communication policy
@@ -82,6 +82,30 @@ This is a sanitised, self-contained proof that represents a Gmail send action wh
 8. **Stored** in a WORM evidence vault
 
 All values are sanitised — no real email addresses, message IDs, or API keys.
+
+```bash
+witnessos-verifier verify fixtures/e4-gmail-approved-send/
+```
+
+### Stripe refund — `fixtures/e4-stripe-refund/`
+
+A sanitised, self-contained demonstration bundle representing a Stripe test-mode refund that was:
+
+1. **Requested** by an AI agent
+2. **Checked** against communication policy
+3. **Permitted** with a scoped one-time permit bound to exact refund target, amount, and reason
+4. **Credential-brokered** via Stripe test-mode key
+5. **Provider acknowledgement** recorded from the Stripe API
+6. **Provider confirmation** via webhook (HMAC-SHA256 verified)
+7. **Signed** by the WitnessOS batch key
+8. **Externally timestamped** (RFC 3161 standard)
+9. **Stored** in a WORM evidence vault
+
+Both fixtures prove evidence integrity, signatures, anchoring, and grade derivation. They do **not** query any live service. Verification is fully offline.
+
+```bash
+witnessos-verifier verify fixtures/e4-stripe-refund/
+```
 
 ## Development
 
