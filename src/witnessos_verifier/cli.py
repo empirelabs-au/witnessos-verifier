@@ -32,7 +32,8 @@ def main():
 @click.argument("bundle_path", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--json", "output_json", is_flag=True, help="Output results as JSON")
 @click.option("--quiet", "-q", is_flag=True, help="Only print PASS/FAIL")
-def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool):
+@click.option("--alpha", "alpha_mode", is_flag=True, help="Alpha mode: cap max evidence grade at E3")
+def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool, alpha_mode: bool = False):
     """Verify a WitnessOS evidence bundle.
 
     BUNDLE_PATH: Path to the evidence bundle directory containing
@@ -40,7 +41,7 @@ def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool):
     timestamp/, and worm/.
     """
     try:
-        result = verify(bundle_path)
+        result = verify(bundle_path, alpha_mode=alpha_mode)
     except VerifyError as e:
         click.echo(f"ERROR: {e}", err=True)
         sys.exit(2)

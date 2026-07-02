@@ -1,5 +1,7 @@
 # witnessos-verifier
 
+> **Alpha Status:** This verifier is in Alpha. Evidence grades are capped at E3 when running with `--alpha` flag. E4 evidence is verified but not asserted. See [WitnessOS SPEC](https://github.com/narko4u/witnessos) for protocol details.
+
 Standalone open-source verifier for [WitnessOS™](https://github.com/narko4u/witnessos) evidence bundles.
 
 **Independently verify AI action receipts — no gateway, no credentials, no network required.**
@@ -59,8 +61,11 @@ Requires Python 3.10+.
 ## Usage
 
 ```bash
-# Verify an evidence bundle
+# Verify an evidence bundle (production — E4 available)
 witnessos-verifier verify ./path/to/evidence-bundle/
+
+# Verify in Alpha mode — grades capped at E3
+witnessos-verifier verify --alpha ./path/to/evidence-bundle/
 
 # Get version
 witnessos-verifier --version

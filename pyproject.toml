@@ -1,6 +1,6 @@
 [project]
 name = "witnessos-verifier"
-version = "0.2.0"
+version = "0.3.0"
 description = "Standalone open-source verifier for WitnessOS™ evidence bundles"
 readme = "README.md"
 license-files = ["LICENSE"]

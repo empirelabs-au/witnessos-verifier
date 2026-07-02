@@ -53,6 +53,7 @@ def derive_grade(
     has_provider_ack: bool,
     timestamp_result: Optional[TimestampResult],
     worm_result: Optional[WormResult],
+    alpha_mode: bool = False,
 ) -> GradeResult:
     """Derive the evidence grade from verification results.
 
@@ -123,6 +124,17 @@ def derive_grade(
         e4_ok = False
 
     if e4_ok:
+        if alpha_mode:
+            # Alpha mode: E4 evidence exists but grade is capped at E3.
+            # The timestamp and WORM checks passed, but we do not assert E4
+            # until the system reaches production readiness.
+            met.append("Alpha: E4 evidence present (capped at E3)")
+            return GradeResult(
+                grade=Grade.E3,
+                display="E3 — Destination acknowledged (Alpha — E4 capped)",
+                requirements_met=met,
+                requirements_missing=missing,
+            )
         # Return E4 regardless of E3 status (E4 subsumes E3)
         return GradeResult(
             grade=Grade.E4,

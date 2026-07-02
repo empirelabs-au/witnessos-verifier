@@ -83,7 +83,7 @@ class VerifyResult:
         return "\n".join(lines)
 
 
-def verify(bundle_path: Path) -> VerifyResult:
+def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
     """Verify a WitnessOS evidence bundle.
 
     The bundle must contain:
@@ -208,6 +208,7 @@ def verify(bundle_path: Path) -> VerifyResult:
         has_provider_ack=has_provider_ack,
         timestamp_result=timestamp_result,
         worm_result=worm_result,
+        alpha_mode=alpha_mode,
     )
 
     # Collect all errors
