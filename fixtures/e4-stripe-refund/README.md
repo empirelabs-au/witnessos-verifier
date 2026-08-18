@@ -1,4 +1,4 @@
-# E4 Evidence Bundle - Stripe Test-Mode Refund
+# E4 Evidence Bundle — Stripe Test-Mode Refund
 
 **Externally timestamped demonstration evidence bundle based on a Stripe test-mode workflow.**
 
@@ -26,6 +26,6 @@ demo values.
 ```bash
 witnessos-verifier verify fixtures/e4-stripe-refund/
 ```
-Expected: **E4 - Externally anchored**
+Expected: **E4 — Externally anchored**
 
 Generated: 2026-06-28T05:37:30Z
