@@ -5,7 +5,7 @@
 ### Added
 
 - **Stripe E4 demonstration fixture**: 7-event evidence bundle for a Stripe test-mode refund workflow
-- **Generator script**: `scripts/generate_stripe_demo_fixture.py` — reproducible E4 bundle generator
+- **Generator script**: `scripts/generate_stripe_demo_fixture.py` - reproducible E4 bundle generator
 - **README**: Clear statement of what offline verification proves vs. what it does not
 
 ### Changed
