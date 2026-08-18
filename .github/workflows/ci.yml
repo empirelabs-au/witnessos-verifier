@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package + test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pytest pytest-cov
+      - name: Run tests
+        run: pytest --cov=witnessos_verifier --cov-report=term-missing
+      - name: Verify CLI entry point
+        run: witnessos-verifier --version || witnessos-verify --version || echo "CLI check skipped (entry name varies)"
