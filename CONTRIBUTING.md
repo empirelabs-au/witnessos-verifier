@@ -23,7 +23,7 @@ pip install -e ".[dev]"
 
 ## Running tests
 
-All tests are offline — no network required:
+All tests are offline - no network required:
 
 ```bash
 pytest tests/ -v

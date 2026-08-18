@@ -1,4 +1,4 @@
-# E4 Evidence Bundle — Gmail Approved Send
+# E4 Evidence Bundle - Gmail Approved Send
 
 **Sanitised fixture for witnessos-verifier.**
 
@@ -12,4 +12,4 @@
 ```bash
 witnessos-verifier verify fixtures/e4-gmail-approved-send/
 ```
-Expected: **E4 — Externally anchored**
+Expected: **E4 - Externally anchored**

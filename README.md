@@ -4,7 +4,7 @@
 
 Standalone open-source verifier for [WitnessOS™](https://github.com/narko4u/witnessos) evidence bundles.
 
-**Independently verify AI action receipts — no gateway, no credentials, no network required.**
+**Independently verify AI action receipts - no gateway, no credentials, no network required.**
 
 ## What it does
 
@@ -17,7 +17,7 @@ witnessos-verifier verify ./evidence-bundle/
 And you get:
 
 ```
-Grade:  E4 — Externally anchored
+Grade:  E4 - Externally anchored
 Events: 7
   Chain:   PASS (6/7 links)
   Ledger:  PASS
@@ -26,7 +26,7 @@ Events: 7
   WORM:    PASS
 ```
 
-Every check runs **offline** — no network access is required during verification. Trust is evaluated against the evidence bundle's public keys and configured timestamp-authority trust policy.
+Every check runs **offline** - no network access is required during verification. Trust is evaluated against the evidence bundle's public keys and configured timestamp-authority trust policy.
 
 ## What it verifies
 
@@ -40,7 +40,7 @@ Every check runs **offline** — no network access is required during verificati
 | E4: RFC 3161 timestamp | A trusted timestamp authority anchored the batch in real time |
 | E4: WORM evidence copy | The evidence hasn't been modified since storage |
 
-**E4 is the highest grade** — externally anchored, independently verifiable evidence.
+**E4 is the highest grade** - externally anchored, independently verifiable evidence.
 
 ## Installation
 
@@ -61,10 +61,10 @@ Requires Python 3.10+.
 ## Usage
 
 ```bash
-# Verify an evidence bundle (production — E4 available)
+# Verify an evidence bundle (production - E4 available)
 witnessos-verifier verify ./path/to/evidence-bundle/
 
-# Verify in Alpha mode — grades capped at E3
+# Verify in Alpha mode - grades capped at E3
 witnessos-verifier verify --alpha ./path/to/evidence-bundle/
 
 # Get version
@@ -73,7 +73,7 @@ witnessos-verifier --version
 
 ## Example fixtures
 
-### Gmail send — `fixtures/e4-gmail-approved-send/`
+### Gmail send - `fixtures/e4-gmail-approved-send/`
 
 A sanitised, self-contained demonstration bundle representing a Gmail send action that was:
 
@@ -86,13 +86,13 @@ A sanitised, self-contained demonstration bundle representing a Gmail send actio
 7. **Externally timestamped** (RFC 3161 standard)
 8. **Stored** in a WORM evidence vault
 
-All values are sanitised — no real email addresses, message IDs, or API keys.
+All values are sanitised - no real email addresses, message IDs, or API keys.
 
 ```bash
 witnessos-verifier verify fixtures/e4-gmail-approved-send/
 ```
 
-### Stripe refund — `fixtures/e4-stripe-refund/`
+### Stripe refund - `fixtures/e4-stripe-refund/`
 
 A sanitised, self-contained demonstration bundle representing a Stripe test-mode refund that was:
 
@@ -153,14 +153,14 @@ src/witnessos_verifier/
 
 The timestamp verifier does not merely parse DER. It validates:
 
-- **Token signature** — the TimeStampToken's SignedData signature must verify against the TSA's certificate
-- **Data imprint** — the `messageImprint` hash must match the batch's Merkle tree root
-- **TSA certificate identity** — the signing certificate must chain to a trusted root CA
-- **Key usage** — the certificate must assert `id-kp-timeStamping` Extended Key Usage
-- **Nonce/freshness** — if a nonce was supplied, the response must echo it
-- **Policy** — the TSA's asserted policy OID must match the configured trust policy
-- **Certificate status** — the TSA certificate must not be expired and must pass revocation checks (CRL or OCSP, configurable)
-- **Algorithm acceptance** — only approved hash and signature algorithms are accepted
+- **Token signature** - the TimeStampToken's SignedData signature must verify against the TSA's certificate
+- **Data imprint** - the `messageImprint` hash must match the batch's Merkle tree root
+- **TSA certificate identity** - the signing certificate must chain to a trusted root CA
+- **Key usage** - the certificate must assert `id-kp-timeStamping` Extended Key Usage
+- **Nonce/freshness** - if a nonce was supplied, the response must echo it
+- **Policy** - the TSA's asserted policy OID must match the configured trust policy
+- **Certificate status** - the TSA certificate must not be expired and must pass revocation checks (CRL or OCSP, configurable)
+- **Algorithm acceptance** - only approved hash and signature algorithms are accepted
 
 These checks can only pass against a configured trust anchor policy. The demonstration
 fixture ships with a relaxed policy suitable for testing; production deployments
@@ -168,18 +168,18 @@ configure their own TSA providers and root CAs.
 
 ## Dependencies
 
-- **pynacl** — Ed25519 signature verification (sole external dependency)
+- **pynacl** - Ed25519 signature verification (sole external dependency)
 - Everything else is Python stdlib
 
 No gateway, no credentials, no network. **Verification happens on your machine.**
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE)
+Apache 2.0 - see [LICENSE](LICENSE)
 
 ## Related
 
-- [WitnessOS™ Spec](https://github.com/narko4u/witnessos) — the protocol specification
+- [WitnessOS™ Spec](https://github.com/narko4u/witnessos) - the protocol specification
 - [Contact Empire Labs](mailto:contact@empirelabs.com.au)
 
 ---
@@ -189,4 +189,4 @@ Apache 2.0 — see [LICENSE](LICENSE)
 
 ---
 
-<sub>Part of the [WitnessOS launch family](https://github.com/narko4u/witnessos): [witnessos-alpha](https://github.com/narko4u/witnessos-alpha) · [witnessos-compliance](https://github.com/narko4u/witnessos-compliance) · [eu-ai-act-compliance-grade](https://github.com/narko4u/eu-ai-act-compliance-grade) · [witnessos-rogue-agent-audit](https://github.com/narko4u/witnessos-rogue-agent-audit) · [witnessos-agent-asset-registry](https://github.com/narko4u/witnessos-agent-asset-registry) · [witnessos-verifier](https://github.com/narko4u/witnessos-verifier) · [agent-interaction-specs](https://github.com/narko4u/agent-interaction-specs) · [aci-spec](https://github.com/narko4u/aci-spec) · [aip-spec](https://github.com/narko4u/aip-spec) · [ajson](https://github.com/narko4u/ajson) — [Empire Labs Pty Ltd](https://www.empirelabs.com.au)</sub>
+<sub>Part of the [WitnessOS launch family](https://github.com/narko4u/witnessos): [witnessos-alpha](https://github.com/narko4u/witnessos-alpha) · [witnessos-compliance](https://github.com/narko4u/witnessos-compliance) · [eu-ai-act-compliance-grade](https://github.com/narko4u/eu-ai-act-compliance-grade) · [witnessos-rogue-agent-audit](https://github.com/narko4u/witnessos-rogue-agent-audit) · [witnessos-agent-asset-registry](https://github.com/narko4u/witnessos-agent-asset-registry) · [witnessos-verifier](https://github.com/narko4u/witnessos-verifier) · [agent-interaction-specs](https://github.com/narko4u/agent-interaction-specs) · [aci-spec](https://github.com/narko4u/aci-spec) · [aip-spec](https://github.com/narko4u/aip-spec) · [ajson](https://github.com/narko4u/ajson) - [Empire Labs Pty Ltd](https://www.empirelabs.com.au)</sub>
