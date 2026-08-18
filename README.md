@@ -173,6 +173,19 @@ configure their own TSA providers and root CAs.
 
 No gateway, no credentials, no network. **Verification happens on your machine.**
 
+## Verifying releases
+
+Each release ships a `SHA256SUMS` file listing the hashes of every release
+asset. To verify that a downloaded asset matches the published release:
+
+```sh
+sha256sum -c SHA256SUMS
+```
+
+This checks the integrity of the wheel and source tarball against the
+hashes generated at release time. The `SHA256SUMS` file itself is attached
+to the GitHub release (see the [Releases](https://github.com/narko4u/witnessos-verifier/releases) page), so integrity can be checked without trusting the download mirror.
+
 ## License
 
 Apache 2.0 - see [LICENSE](LICENSE)
