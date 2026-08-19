@@ -10,6 +10,11 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to backfill (e.g. v0.2.0). Leave empty to use the pushed tag."
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -20,9 +25,19 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve target ref
+        id: ref
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ steps.ref.outputs.tag }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -64,6 +79,7 @@ jobs:
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.ref.outputs.tag }}
           files: |
             dist/*
             sbom.cdx.json
