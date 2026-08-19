@@ -1,5 +1,7 @@
 # witnessos-verifier
 
+[![OpenSSF Best Practices - Baseline 1](https://www.bestpractices.dev/projects/14138/badge)](https://www.bestpractices.dev/projects/14138)
+
 > **Alpha Status:** This verifier is in Alpha. Evidence grades are capped at E3 when running with `--alpha` flag. E4 evidence is verified but not asserted. See [WitnessOS SPEC](https://github.com/narko4u/witnessos) for protocol details.
 
 Standalone open-source verifier for [WitnessOS™](https://github.com/narko4u/witnessos) evidence bundles.
