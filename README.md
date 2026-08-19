@@ -177,6 +177,8 @@ No gateway, no credentials, no network. **Verification happens on your machine.*
 
 ## Verifying releases
 
+### 1. Integrity (checksums)
+
 Each release ships a `SHA256SUMS` file listing the hashes of every release
 asset. To verify that a downloaded asset matches the published release:
 
@@ -184,9 +186,52 @@ asset. To verify that a downloaded asset matches the published release:
 sha256sum -c SHA256SUMS
 ```
 
-This checks the integrity of the wheel and source tarball against the
+This checks the integrity of the wheel, source tarball, and SBOM against the
 hashes generated at release time. The `SHA256SUMS` file itself is attached
 to the GitHub release (see the [Releases](https://github.com/narko4u/witnessos-verifier/releases) page), so integrity can be checked without trusting the download mirror.
+
+### 2. Authenticity (Sigstore/cosign signatures)
+
+Every release asset is signed **keylessly** with [Sigstore](https://www.sigstore.dev/)
+at build time by the `Release` GitHub Actions workflow. Each asset is shipped
+with a `.sig` signature and a `.pem` signing certificate. To verify the
+signature of an asset:
+
+```sh
+# install cosign: https://docs.sigstore.dev/cosign/installation/
+cosign verify-blob \
+  --certificate-identity "https://github.com/narko4u/witnessos-verifier/.github/workflows/release.yml@refs/tags/v*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  --signature witnessos_verifier-0.2.0-py3-none-any.whl.sig \
+  --certificate witnessos_verifier-0.2.0-py3-none-any.whl.pem \
+  witnessos_verifier-0.2.0-py3-none-any.whl
+```
+
+### 3. Release author identity
+
+Releases are authored by the **Empire Labs Pty Ltd** maintainer team and
+built automatically by the `Release` GitHub Actions workflow in the
+`narko4u/witnessos-verifier` repository (identity
+`https://github.com/narko4u/witnessos-verifier/.github/workflows/release.yml@refs/tags/v*`,
+issuer `https://token.actions.githubusercontent.com`). The Sigstore
+certificate embedded in each `.pem` file binds every asset to exactly this
+workflow and tag - if the certificate identity in step 2 does not match,
+the asset was not produced by this project's release process.
+
+### 4. Software Bill of Materials (SBOM)
+
+Each release ships a CycloneDX SBOM (`sbom.cdx.json`) generated from the
+built artifacts by the `Release` workflow. The SBOM lists every runtime and
+build dependency so consumers can inventory the supply chain of the wheel
+and source tarball. Verify it with the same checksum and signature
+verification steps above.
+
+### 5. VEX and threat assessment
+
+The repository also publishes a [VEX](VEX.md) document accounting for known
+vulnerabilities that do not affect the project, and a
+[threat assessment](THREAT-ASSESSMENT.md) covering the attack surface and
+mitigations for each release.
 
 ## License
 

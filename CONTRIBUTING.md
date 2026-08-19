@@ -29,6 +29,10 @@ All tests are offline - no network required:
 pytest tests/ -v
 ```
 
+The project's testing policy (when tests run, what they must cover, and the
+requirement that major changes add or update automated tests) is documented
+in [TESTING.md](TESTING.md).
+
 ## Code style
 
 - Type hints on all public functions
