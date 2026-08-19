@@ -10,6 +10,34 @@ permissions:
   contents: read
 
 jobs:
+  dco:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify all commits carry Signed-off-by (DCO)
+        run: |
+          set -e
+          BASE="${GITHUB_EVENT_PULL_REQUEST_BASE_SHA:-${{ github.event.pull_request.base.sha }}}"
+          HEAD="${GITHUB_EVENT_PULL_REQUEST_HEAD_SHA:-${{ github.event.pull_request.head.sha }}}"
+          if [ -z "$BASE" ] || [ -z "$HEAD" ]; then
+            echo "Skipping DCO check outside pull_request context"
+            exit 0
+          fi
+          bad=""
+          for c in $(git rev-list "$BASE..$HEAD"); do
+            if ! git log -1 --format=%B "$c" | grep -q "^Signed-off-by: "; then
+              echo "::error::commit $c is missing Signed-off-by trailer (DCO)"
+              bad=1
+            fi
+          done
+          if [ -n "$bad" ]; then
+            echo "All commits must include a Signed-off-by trailer. Use: git commit -s"
+            exit 1
+          fi
+          echo "DCO check passed"
+
   test:
     runs-on: ubuntu-latest
     steps:

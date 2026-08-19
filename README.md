@@ -175,6 +175,24 @@ configure their own TSA providers and root CAs.
 
 No gateway, no credentials, no network. **Verification happens on your machine.**
 
+### Dependency management
+
+The project follows a deliberate, minimal dependency policy:
+
+1. **Selection** - new dependencies are avoided unless a standard-library
+   alternative does not exist. The current sole runtime dependency (PyNaCl)
+   exists because the standard library does not expose Ed25519 signing.
+2. **Obtaining** - dependencies are declared in `pyproject.toml` and pinned
+   through the `uv.lock` lockfile, so every build uses a reproducible set of
+   package versions.
+3. **Tracking** - dependencies are monitored three ways:
+   - **SCA**: every push/PR runs [OSV-Scanner](https://google.github.io/osv-scanner/)
+     in the `security` workflow to detect known vulnerabilities in the lockfile.
+   - **SBOM**: every release ships a CycloneDX SBOM (`sbom.cdx.json`) listing
+     the exact dependency set of the released artifact.
+   - **Integrity**: every release asset ships with a Sigstore signature and a
+     `SHA256SUMS` checksum manifest (see [Verifying releases](#verifying-releases)).
+
 ## Verifying releases
 
 ### 1. Integrity (checksums)
