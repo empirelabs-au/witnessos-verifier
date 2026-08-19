@@ -1,0 +1,72 @@
+name: Release
+
+# Build release assets, generate a CycloneDX SBOM, sign every artifact
+# keylessly with Sigstore/cosign (GitHub OIDC), and publish to the release.
+# - SBOM: https://www.bestpractices.dev/en/criteria -> OSPS-QA-02.02
+# - Signing + identity: OSPS-DO-03.01 / OSPS-DO-03.02
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # id-token is required for Sigstore keyless signing (GitHub OIDC).
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --outdir dist
+
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./dist
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign artifacts with Sigstore keyless
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          set -euo pipefail
+          for f in dist/* sbom.cdx.json; do
+            cosign sign-blob --yes --output-signature "${f}.sig" --output-certificate "${f}.pem" "$f"
+            echo "signed: $f"
+          done
+
+      - name: Create checksums
+        run: |
+          cd dist && sha256sum * > SHA256SUMS && cd ..
+          # also include the SBOM and signature files in the checksum file
+          sha256sum sbom.cdx.json sbom.cdx.json.sig sbom.cdx.json.pem dist/*.sig dist/*.pem >> dist/SHA256SUMS 2>/dev/null || true
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
+            sbom.cdx.json
+            sbom.cdx.json.sig
+            sbom.cdx.json.pem
+          generate_release_notes: true
