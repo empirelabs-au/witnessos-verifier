@@ -123,7 +123,7 @@ def derive_grade(
         missing.append("E4: WORM evidence copy invalid or missing")
         e4_ok = False
 
-    if e4_ok:
+    if e4_ok and has_provider_ack:
         if alpha_mode:
             # Alpha mode: E4 evidence exists but grade is capped at E3.
             # The timestamp and WORM checks passed, but we do not assert E4
@@ -135,7 +135,6 @@ def derive_grade(
                 requirements_met=met,
                 requirements_missing=missing,
             )
-        # Return E4 regardless of E3 status (E4 subsumes E3)
         return GradeResult(
             grade=Grade.E4,
             display="E4 — Externally anchored",

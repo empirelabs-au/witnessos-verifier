@@ -155,8 +155,14 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
         warnings.append("No batch_manifest.json found")
 
     # 6. Check for provider acknowledgement
+    # Accept BOTH naming conventions: the current engine vocabulary is
+    # dot-separated (provider.acknowledged / provider.confirmed) while older
+    # bundles used underscores (provider_acknowledged / provider_confirmed).
     has_provider_ack = any(
-        e.event_type in ("provider_acknowledged", "provider_confirmed")
+        e.event_type in (
+            "provider.acknowledged", "provider.confirmed",
+            "provider_acknowledged", "provider_confirmed",
+        )
         for e in events
     )
 
