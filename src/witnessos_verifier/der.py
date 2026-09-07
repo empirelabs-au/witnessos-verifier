@@ -3,7 +3,7 @@
 No external ASN.1 library dependency. Handles enough DER to parse
 CMS SignedData, verify signatures, and extract TSTInfo.
 
-This is a standalone module — no witnessos-gateway dependency.
+This is a standalone module with no private-gateway dependency.
 """
 
 import hashlib
