@@ -1,3 +1,5 @@
+> **Current limitation:** External timestamp authentication and authenticated WORM retention are unavailable. Earlier E4 claims below are historical and must not be used as launch assurances. See [ATTACK-REVIEW.md](ATTACK-REVIEW.md).
+
 # Design: witnessos-verifier
 
 This document describes the design of `witnessos-verifier`: the actors, the

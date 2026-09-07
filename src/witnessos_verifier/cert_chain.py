@@ -319,4 +319,4 @@ def verify_cms_signed_data_signature(
     # The der.py module extracts these — we'll integrate here
     # This is a stub that will be completed when we have full CMS parsing
     logger.warning("Full CMS SignedData verification requires complete CMS parsing")
-    return True  # Stub — will be implemented with proper CMS extraction
+    return False  # Fail closed until CMS signed attributes and signature are verified

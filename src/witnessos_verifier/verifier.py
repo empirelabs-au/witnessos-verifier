@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
+from .binding import verify_event_signatures, verify_batch_binding
 from .case_chain import verify_case_chain, ChainResult
 from .events import load_events, Event, EventError
 from .grades import derive_grade, GradeResult
@@ -18,6 +19,10 @@ from .manifest import BatchManifest, verify_manifest, ManifestResult
 from .merkle import MerkleError
 from .timestamp import verify_timestamp, TimestampResult, TimestampError
 from .worm import verify_worm_bundle, WormResult, WormError
+
+
+PROVIDER_ACK_TYPES = frozenset({"provider.acknowledged", "provider.confirmed",
+                                "provider_acknowledged", "provider_confirmed"})
 
 
 class VerifyError(Exception):
@@ -72,7 +77,7 @@ class VerifyResult:
 
         if self.worm_result:
             status = "PASS" if self.worm_result.valid else "FAIL"
-            lines.append(f"  WORM:    {status}")
+            lines.append(f"  WORM checksum: {status} (retention unverified)")
 
         if self.errors:
             lines.append("")
@@ -105,10 +110,13 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
     if not bundle_path.is_dir():
         raise VerifyError(f"Not a directory: {bundle_path}")
 
+    if any(p.is_symlink() for p in bundle_path.rglob("*")):
+        return VerifyResult(bundle_path=bundle_path, valid=False, errors=["Symlinks are not allowed in evidence bundles"])
+
     # 1. Load events
     try:
         events = load_events(bundle_path)
-    except EventError as e:
+    except (EventError, ValueError, TypeError, OSError) as e:
         return VerifyResult(
             bundle_path=bundle_path,
             valid=False,
@@ -128,10 +136,13 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
     if keys_path.exists():
         try:
             key_registry = KeyRegistry.from_file(keys_path)
-        except KeyRegistryError as e:
-            warnings.append(f"Key registry: {e}")
+        except (KeyRegistryError, ValueError, TypeError, KeyError, OSError) as e:
+            errors.append(f"Key registry: {e}")
     else:
-        warnings.append("No keys.json found — signatures cannot be verified")
+        errors.append("No keys.json found — signatures cannot be verified")
+
+    signature_errors = verify_event_signatures(events, key_registry)
+    errors.extend(signature_errors)
 
     # 3. Verify case hash chain
     chain_result = verify_case_chain(events)
@@ -141,22 +152,28 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
 
     # 5. Verify manifest
     manifest_result = None
+    binding_errors = []
     manifest_path = bundle_path / "batch_manifest.json"
     if manifest_path.exists():
         try:
             manifest = BatchManifest.from_file(manifest_path)
             if key_registry:
                 manifest_result = verify_manifest(manifest, key_registry)
+                binding_errors = verify_batch_binding(events, manifest, bundle_path)
+                errors.extend(binding_errors)
             else:
-                warnings.append("Cannot verify manifest: no key registry")
+                errors.append("Cannot verify manifest: no key registry")
         except Exception as e:
-            warnings.append(f"Manifest verification skipped: {e}")
+            errors.append(f"Manifest verification failed: {e}")
     else:
-        warnings.append("No batch_manifest.json found")
+        errors.append("No batch_manifest.json found")
 
     # 6. Check for provider acknowledgement
+    # Accept BOTH naming conventions: the current engine vocabulary is
+    # dot-separated (provider.acknowledged / provider.confirmed) while older
+    # bundles used underscores (provider_acknowledged / provider_confirmed).
     has_provider_ack = any(
-        e.event_type in ("provider_acknowledged", "provider_confirmed")
+        e.event_type in PROVIDER_ACK_TYPES
         for e in events
     )
 
@@ -184,7 +201,7 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
                 try:
                     timestamp_result = verify_timestamp(ts_files[0], expected_hash)
                 except Exception as e:
-                    warnings.append(f"Timestamp verification error: {e}")
+                    errors.append(f"Timestamp verification error: {e}")
             else:
                 warnings.append("Cannot verify timestamp: no expected hash from manifest")
         else:
@@ -197,7 +214,10 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
         try:
             worm_result = verify_worm_bundle(worm_dir, bundle_path)
         except Exception as e:
-            warnings.append(f"WORM verification error: {e}")
+            errors.append(f"WORM verification error: {e}")
+
+    warnings.append("Bundled public keys establish signature consistency, not signer identity; authenticate keys independently.")
+    warnings.append("Local WORM checksums do not prove remote retention or immutability.")
 
     # 9. Derive grade
     grade = derive_grade(
@@ -209,6 +229,9 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
         timestamp_result=timestamp_result,
         worm_result=worm_result,
         alpha_mode=alpha_mode,
+        event_signatures_valid=not signature_errors,
+        batch_binding_valid=manifest_result is not None and not any(not e.startswith("Merkle proof:") for e in binding_errors),
+        merkle_proof_valid=manifest_result is not None and not any(e.startswith("Merkle proof:") for e in binding_errors),
     )
 
     # Collect all errors

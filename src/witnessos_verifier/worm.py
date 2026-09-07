@@ -34,6 +34,7 @@ class WormResult:
     hash_matches: bool
     file_count_matches: bool
     errors: List[str]
+    retention_verified: bool = False
 
 
 def load_worm_bundle(worm_dir: Path) -> WormBundle:
@@ -74,7 +75,7 @@ def verify_worm_bundle(worm_dir: Path, evidence_dir: Path) -> WormResult:
     computed_hash = hashlib.sha256()
 
     for f in evidence_files:
-        if f.is_file() and "worm" not in f.parts:
+        if f.is_file() and f.relative_to(evidence_dir).parts[0] != "worm":
             computed_hash.update(f.read_bytes())
 
     current_hash = computed_hash.hexdigest()
@@ -87,7 +88,7 @@ def verify_worm_bundle(worm_dir: Path, evidence_dir: Path) -> WormResult:
         )
 
     # Count files (excluding worm dir)
-    current_count = sum(1 for f in evidence_files if f.is_file() and "worm" not in f.parts)
+    current_count = sum(1 for f in evidence_files if f.is_file() and f.relative_to(evidence_dir).parts[0] != "worm")
     count_ok = current_count == bundle.file_count
 
     if not count_ok:

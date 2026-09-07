@@ -1,3 +1,5 @@
+> **Current limitation:** External timestamp authentication and authenticated WORM retention are unavailable. Earlier E4 claims below are historical and must not be used as launch assurances. See [ATTACK-REVIEW.md](ATTACK-REVIEW.md).
+
 # VEX — Vulnerability Exploitability eXchange
 
 Status: current as of v0.2.0 (2026-08-18). Reviewed before each release.

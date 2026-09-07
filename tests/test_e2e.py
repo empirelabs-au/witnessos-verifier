@@ -4,15 +4,15 @@ from pathlib import Path
 
 
 class TestE2EVerification:
-    def test_full_verification_passes(self, bundle_path):
+    def test_fixture_reports_unverified_anchor(self, bundle_path):
         from witnessos_verifier.verifier import verify
 
         result = verify(bundle_path)
-        assert result.valid, f"Verification failed: {result.errors}"
-        assert result.grade.grade == "E4", f"Expected E4, got {result.grade.grade}"
-        assert len(result.errors) == 0, f"Unexpected errors: {result.errors}"
-        assert "E4: RFC 3161 timestamp valid" in result.grade.requirements_met
-        assert "E4: WORM evidence copy valid" in result.grade.requirements_met
+        assert not result.valid
+        assert any("TSA signature" in e for e in result.errors)
+        assert result.grade.grade == "E3"
+        assert not result.timestamp_result.valid
+        assert not result.worm_result.retention_verified
 
     def test_all_requirements_in_result(self, bundle_path):
         from witnessos_verifier.verifier import verify
@@ -24,18 +24,18 @@ class TestE2EVerification:
             "E2: Ledger sequence valid",
             "E2: Manifest signature valid",
             "E3: Provider acknowledged",
-            "E4: RFC 3161 timestamp valid",
-            "E4: WORM evidence copy valid",
+            "E2: Event signatures valid",
+            "E2: Events bound to signed batch",
         ]
         for req in required:
             assert req in result.grade.requirements_met, \
                 f"Missing requirement: {req} (met: {result.grade.requirements_met})"
 
-    def test_no_requirements_missing(self, bundle_path):
+    def test_external_requirements_explicitly_missing(self, bundle_path):
         from witnessos_verifier.verifier import verify
 
         result = verify(bundle_path)
-        assert len(result.grade.requirements_missing) == 0, \
+        assert len(result.grade.requirements_missing) == 2, \
             f"Missing requirements: {result.grade.requirements_missing}"
 
 
@@ -48,8 +48,9 @@ class TestCLIVerify:
             [str(exe), "verify", str(bundle_path)],
             capture_output=True, text=True, timeout=15,
         )
-        assert result.returncode == 0, f"CLI failed: {result.stderr}"
-        assert "E4" in result.stdout
+        assert result.returncode == 1, f"CLI failed: {result.stderr}"
+        assert "Grade:  E3" in result.stdout
+        assert "TSA:     FAIL" in result.stdout
 
 
 class TestEmptyBundle:

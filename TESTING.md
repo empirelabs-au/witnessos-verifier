@@ -1,3 +1,5 @@
+> **Current limitation:** External timestamp authentication and authenticated WORM retention are unavailable. Earlier E4 claims below are historical and must not be used as launch assurances. See [ATTACK-REVIEW.md](ATTACK-REVIEW.md).
+
 # Testing Policy
 
 This document defines the project's policy for automated tests: **when** they
