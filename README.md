@@ -2,47 +2,21 @@
 
 [![OpenSSF Best Practices - Baseline 1](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.bestpractices.dev%2Fprojects%2F14138.json&query=badge_percentage_baseline_1&label=OpenSSF%20Baseline%201&suffix=%25&color=success)](https://www.bestpractices.dev/projects/14138) [![OpenSSF Best Practices - Baseline 2](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.bestpractices.dev%2Fprojects%2F14138.json&query=badge_percentage_baseline_2&label=OpenSSF%20Baseline%202&suffix=%25&color=success)](https://www.bestpractices.dev/projects/14138) [![OpenSSF Best Practices - Baseline 3](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.bestpractices.dev%2Fprojects%2F14138.json&query=badge_percentage_baseline_3&label=OpenSSF%20Baseline%203&suffix=%25&color=success)](https://www.bestpractices.dev/projects/14138)
 
-> **Alpha Status:** This verifier is in Alpha. Evidence grades are capped at E3 when running with `--alpha` flag. E4 evidence is verified but not asserted. See [WitnessOS SPEC](https://github.com/narko4u/witnessos) for protocol details.
+> **Launch status: NOT READY for E4 verification.** The attack review found false E4 acceptance in the original verifier and PR #10. This branch contains fail-closed containment, not a completed external-trust implementation. See [ATTACK-REVIEW.md](ATTACK-REVIEW.md).
 
-Standalone open-source verifier for [WitnessOS™](https://github.com/narko4u/witnessos) evidence bundles.
+Standalone verifier for WitnessOS evidence bundles. It checks event and manifest Ed25519 signatures, canonical event chains, sequence bounds, event membership, and binding to the signed batch root. Bundled keys prove consistency with those keys; authenticate their identity independently.
 
-**Independently verify AI action receipts - no gateway, no credentials, no network required.**
+| Grade | Required evidence |
+|---|---|
+| E0 | No events loaded (grade-derivation API) |
+| E1 | Events loaded |
+| E2 | E1 plus valid event/manifest signatures, chain, sequence and signed batch binding |
+| E3 | E2 plus a signed event recording provider acknowledgement |
+| E4 | E3 plus bound inclusion proof, authenticated timestamp and authenticated WORM retention evidence |
 
-## What it does
+E3 records the signer's claim about a provider response; it does not independently authenticate a provider or query a live service. E4 cannot currently be substantiated: CMS signature verification, trusted TSA path integration and authenticated remote retention verification are unavailable. A matching local WORM checksum is not immutability evidence.
 
-You receive a WitnessOS evidence bundle (a directory of JSON files, a Merkle proof, a signed manifest, an RFC 3161 timestamp token, and WORM store metadata). You run:
-
-```
-witnessos-verifier verify ./evidence-bundle/
-```
-
-And you get:
-
-```
-Grade:  E4 - Externally anchored
-Events: 7
-  Chain:   PASS (6/7 links)
-  Ledger:  PASS
-  Manifest: PASS
-  TSA:     PASS
-  WORM:    PASS
-```
-
-Every check runs **offline** - no network access is required during verification. Trust is evaluated against the evidence bundle's public keys and configured timestamp-authority trust policy.
-
-## What it verifies
-
-| Check | What it proves |
-|-------|---------------|
-| E1: Events loaded | The bundle contains valid events |
-| E2: Case hash chain | Each event links to the previous one (tamper-evident sequence) |
-| E2: Ledger sequence | Events are part of a monotonic global ledger |
-| E2: Manifest signature | The batch was signed by an authorized WitnessOS key |
-| E3: Provider acknowledged | An external provider confirmed the action |
-| E4: RFC 3161 timestamp | A trusted timestamp authority anchored the batch in real time |
-| E4: WORM evidence copy | The evidence hasn't been modified since storage |
-
-**E4 is the highest grade** - externally anchored, independently verifiable evidence.
+The CLI returns exit 1 when supplied evidence fails or cannot be verified. A lower grade may describe checks that passed; it does not override an invalid bundle result.
 
 ## Installation
 
@@ -53,17 +27,17 @@ pip install witnessos-verifier
 Or from source:
 
 ```bash
-git clone https://github.com/narko4u/witnessos-verifier.git
+git clone https://github.com/empirelabs-au/witnessos-verifier.git
 cd witnessos-verifier
 pip install -e ".[dev]"
 ```
 
-Requires Python 3.10+.
+Requires Python 3.12+.
 
 ## Usage
 
 ```bash
-# Verify an evidence bundle (production - E4 available)
+# Verify an evidence bundle (E4 authentication currently unavailable)
 witnessos-verifier verify ./path/to/evidence-bundle/
 
 # Verify in Alpha mode - grades capped at E3
@@ -75,50 +49,18 @@ witnessos-verifier --version
 
 ## Example fixtures
 
-### Gmail send - `fixtures/e4-gmail-approved-send/`
+Fixtures remain byte-for-byte unchanged. Their historical README expectations are not the current verifier's result.
 
-A sanitised, self-contained demonstration bundle representing a Gmail send action that was:
+- `e4-gmail-approved-send`: signatures and signed event-root binding pass; timestamp authentication is unavailable. E3, invalid bundle, exit 1.
+- `e4-stripe-refund`: event signatures pass, but canonical events do not reproduce the signed Merkle root with this repository's algorithm; proof leaf binding also fails. E1, invalid bundle, exit 1.
 
-1. **Requested** by an AI agent
-2. **Checked** against communication policy
-3. **Permitted** with a scoped one-time permit
-4. **Credential-brokered** via OAuth2
-5. **Provider acknowledgement recorded from the Gmail API**
-6. **Signed** by the WitnessOS batch key
-7. **Externally timestamped** (RFC 3161 standard)
-8. **Stored** in a WORM evidence vault
-
-All values are sanitised - no real email addresses, message IDs, or API keys.
-
-```bash
-witnessos-verifier verify fixtures/e4-gmail-approved-send/
-```
-
-### Stripe refund - `fixtures/e4-stripe-refund/`
-
-A sanitised, self-contained demonstration bundle representing a Stripe test-mode refund that was:
-
-1. **Requested** by an AI agent
-2. **Checked** against communication policy
-3. **Permitted** with a scoped one-time permit bound to exact refund target, amount, and reason
-4. **Credential-brokered** via Stripe test-mode key
-5. **Provider acknowledgement** recorded from the Stripe API
-6. **Provider confirmation** via webhook (HMAC-SHA256 verified)
-7. **Signed** by the WitnessOS batch key
-8. **Externally timestamped** (RFC 3161 standard)
-9. **Stored** in a WORM evidence vault
-
-Both fixtures prove evidence integrity, signatures, anchoring, and grade derivation. They do **not** query any live service. Verification is fully offline.
-
-```bash
-witnessos-verifier verify fixtures/e4-stripe-refund/
-```
+No fixture has been demonstrated to be valid E4 by this review. Resolve the Stripe producer's leaf/tree convention against an authoritative protocol before claiming compatibility; do not special-case fixture hashes.
 
 ## Development
 
 ```bash
 # Clone
-git clone https://github.com/narko4u/witnessos-verifier.git
+git clone https://github.com/empirelabs-au/witnessos-verifier.git
 cd witnessos-verifier
 
 # Install dev dependencies
@@ -151,27 +93,15 @@ src/witnessos_verifier/
 └── grades.py            # E1-E4 evidence grade derivation
 ```
 
-## What RFC 3161 verification checks
+## Timestamp limitations
 
-The timestamp verifier does not merely parse DER. It validates:
-
-- **Token signature** - the TimeStampToken's SignedData signature must verify against the TSA's certificate
-- **Data imprint** - the `messageImprint` hash must match the batch's Merkle tree root
-- **TSA certificate identity** - the signing certificate must chain to a trusted root CA
-- **Key usage** - the certificate must assert `id-kp-timeStamping` Extended Key Usage
-- **Nonce/freshness** - if a nonce was supplied, the response must echo it
-- **Policy** - the TSA's asserted policy OID must match the configured trust policy
-- **Certificate status** - the TSA certificate must not be expired and must pass revocation checks (CRL or OCSP, configurable)
-- **Algorithm acceptance** - only approved hash and signature algorithms are accepted
-
-These checks can only pass against a configured trust anchor policy. The demonstration
-fixture ships with a relaxed policy suitable for testing; production deployments
-configure their own TSA providers and root CAs.
+The current parser checks the message imprint and some policy fields. It does not authenticate CMS SignedData. The certificate extractor is incomplete, nonce enforcement is absent, and revocation fetching/verification is unimplemented. Configuration alone must never report revocation as checked. These limitations now fail closed; production external anchoring remains a launch blocker.
 
 ## Dependencies
 
-- **pynacl** - Ed25519 signature verification (sole external dependency)
-- Everything else is Python stdlib
+- **pynacl** - Ed25519 signature verification
+- **click** - CLI
+- Optional trust and S3 adapters have additional dependencies
 
 No gateway, no credentials, no network. **Verification happens on your machine.**
 

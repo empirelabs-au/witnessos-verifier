@@ -20,8 +20,9 @@ def main():
     """WitnessOS™ Verifier — Independently verify AI action evidence bundles.
 
     This verifier reads WitnessOS evidence bundles and cryptographically
-    verifies: canonical JSON, Ed25519 signatures, hash chains, Merkle proofs,
-    RFC 3161 timestamps, and WORM evidence copies.
+    checks event signatures, hash chains, and signed batch/Merkle binding.
+    Timestamp authentication and remote WORM retention are unavailable;
+    this release cannot substantiate E4.
 
     No gateway, credential broker, or key management code is included.
     """

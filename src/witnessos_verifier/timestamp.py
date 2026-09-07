@@ -56,6 +56,8 @@ class TimestampInfo:
 class TimestampResult:
     """Result of timestamp token verification."""
     valid: bool
+    signature_verified: bool = False
+    trust_verified: bool = False
     tst_info: Optional[TimestampInfo] = None
     cert_chain: List[bytes] = field(default_factory=list)
     imprint_matches: bool = False
@@ -264,8 +266,8 @@ def verify_timestamp(
                         "No TSA certificate found in timestamp token"
                     )
             except ImportError:
-                trust_result.add_skip(
-                    "Certificate chain validation skipped "
+                trust_result.add_fail(
+                    "Certificate chain validation unavailable "
                     "(cryptography not installed)"
                 )
         else:
@@ -273,6 +275,10 @@ def verify_timestamp(
                 f"Certificate chain validation not required "
                 f"(trust level: {policy.level.value})"
             )
+
+        # Parsing an imprint is not authentication. CMS verification is not implemented.
+        errors.append("TSA signature and trusted certificate path are not verified; external anchoring unavailable")
+        trust_result.add_fail(errors[-1])
 
         overall_valid = (
             len(errors) == 0

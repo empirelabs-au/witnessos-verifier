@@ -23,6 +23,7 @@ from .worm import WormResult
 
 
 class Grade:
+    E0 = "E0"
     E1 = "E1"
     E2 = "E2"
     E3 = "E3"
@@ -54,6 +55,9 @@ def derive_grade(
     timestamp_result: Optional[TimestampResult],
     worm_result: Optional[WormResult],
     alpha_mode: bool = False,
+    event_signatures_valid: bool = False,
+    batch_binding_valid: bool = False,
+    merkle_proof_valid: bool = False,
 ) -> GradeResult:
     """Derive the evidence grade from verification results.
 
@@ -71,7 +75,7 @@ def derive_grade(
         met.append("E1: Events loaded")
     else:
         missing.append("E1: Events loaded")
-        return GradeResult(grade="None", display="No evidence loaded",
+        return GradeResult(grade=Grade.E0, display="No evidence loaded",
                           requirements_met=met, requirements_missing=missing)
 
     grade = Grade.E1
@@ -84,7 +88,7 @@ def derive_grade(
         missing.append("E2: Case hash chain invalid")
         e2_ok = False
 
-    if ledger_result and ledger_result.sequence_monotonic:
+    if ledger_result and ledger_result.valid and ledger_result.sequence_monotonic:
         met.append("E2: Ledger sequence valid")
     else:
         missing.append("E2: Ledger sequence invalid")
@@ -95,6 +99,10 @@ def derive_grade(
     else:
         missing.append("E2: Manifest signature not verified")
         e2_ok = False
+
+    for ok, label in [(event_signatures_valid, "Event signatures valid"), (batch_binding_valid, "Events bound to signed batch")]:
+        (met if ok else missing).append("E2: " + label)
+        e2_ok = e2_ok and ok
 
     if not e2_ok:
         return GradeResult(grade=Grade.E1, display="E1 — Observed",
@@ -109,21 +117,22 @@ def derive_grade(
         missing.append("E3: No provider acknowledgement found")
 
     # E4
-    e4_ok = True
+    e4_ok = merkle_proof_valid
+    (met if merkle_proof_valid else missing).append("E4: Merkle inclusion proof valid")
 
-    if timestamp_result and timestamp_result.valid and timestamp_result.imprint_matches:
+    if timestamp_result and timestamp_result.valid and timestamp_result.imprint_matches and getattr(timestamp_result, "signature_verified", False) and getattr(timestamp_result, "trust_verified", False):
         met.append("E4: RFC 3161 timestamp valid")
     else:
         missing.append("E4: RFC 3161 timestamp invalid or missing")
         e4_ok = False
 
-    if worm_result and worm_result.valid:
+    if worm_result and worm_result.valid and getattr(worm_result, "retention_verified", False):
         met.append("E4: WORM evidence copy valid")
     else:
-        missing.append("E4: WORM evidence copy invalid or missing")
+        missing.append("E4: Authenticated WORM retention evidence invalid or missing")
         e4_ok = False
 
-    if e4_ok:
+    if e4_ok and has_provider_ack:
         if alpha_mode:
             # Alpha mode: E4 evidence exists but grade is capped at E3.
             # The timestamp and WORM checks passed, but we do not assert E4
@@ -135,7 +144,6 @@ def derive_grade(
                 requirements_met=met,
                 requirements_missing=missing,
             )
-        # Return E4 regardless of E3 status (E4 subsumes E3)
         return GradeResult(
             grade=Grade.E4,
             display="E4 — Externally anchored",

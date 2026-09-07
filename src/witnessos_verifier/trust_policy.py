@@ -179,7 +179,7 @@ class TrustPolicy:
         STANDARD never requires revocation.
         STRICT requires it when check_revocation is enabled.
         """
-        return self.level == TrustLevel.STRICT and self.check_revocation
+        return self.level == TrustLevel.STRICT or self.check_revocation
 
     def can_check_revocation(self) -> bool:
         """Whether revocation can actually be checked right now.
@@ -207,7 +207,7 @@ class TrustPolicy:
             return RevocationStatus.NOT_REQUIRED
         if not self.can_check_revocation():
             return RevocationStatus.FAIL_CLOSED
-        return RevocationStatus.CHECKED  # Will be refined after actual fetch
+        return RevocationStatus.FAIL_CLOSED  # No CRL/OCSP verification is implemented
 
 
 # --- Trust Policy Result ---

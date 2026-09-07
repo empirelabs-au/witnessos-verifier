@@ -41,14 +41,13 @@ def verify_detached_signature(
     Returns:
         True if the signature is valid.
     """
-    public_key_bytes = bytes.fromhex(public_key_hex)
-    signature_bytes = base64.b64decode(signature_b64)
-
     try:
+        public_key_bytes = bytes.fromhex(public_key_hex)
+        signature_bytes = base64.b64decode(signature_b64, validate=True)
         verify_key = nacl.signing.VerifyKey(public_key_bytes)
         verify_key.verify(message, signature_bytes)
         return True
-    except nacl.exceptions.BadSignatureError:
+    except (nacl.exceptions.BadSignatureError, ValueError, TypeError):
         return False
 
 

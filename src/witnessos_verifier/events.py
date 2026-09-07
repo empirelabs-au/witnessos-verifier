@@ -58,10 +58,22 @@ class Event:
         except json.JSONDecodeError as e:
             raise EventError(f"Invalid JSON in {path}: {e}") from e
 
+        if not isinstance(data, dict):
+            raise EventError(f"Event must be a JSON object: {path}")
+
         required = ["event_id", "event_type", "case_id", "seq", "prev_hash", "payload"]
         for field_name in required:
             if field_name not in data:
                 raise EventError(f"Missing required field '{field_name}' in {path}")
+
+        if type(data["seq"]) is not int or data["seq"] < 0:
+            raise EventError(f"Invalid event sequence: {path}")
+        if not isinstance(data["payload"], dict):
+            raise EventError(f"Invalid event payload: {path}")
+        if any(not isinstance(data[k], str) or not data[k] for k in ("event_id", "event_type", "case_id", "prev_hash")):
+            raise EventError(f"Invalid event header: {path}")
+        if set(data) - set(required) - {"signed"}:
+            raise EventError(f"Unknown unsigned event fields: {path}")
 
         return cls(
             event_id=data["event_id"],
