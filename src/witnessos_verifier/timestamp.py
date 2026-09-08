@@ -16,23 +16,11 @@ The verifier:
 10. Supports dual-anchor verification (primary + secondary TSA)
 """
 
-import hashlib
-import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from .der import (
-    DerCursor, DerError,
-    OID_TST_INFO, OID_SHA256, OID_SHA256_RSA, OID_RSA_ENCRYPTION,
-    OID_PKCS7_SIGNED_DATA, OID_CONTENT_TYPE, OID_MESSAGE_DIGEST, OID_SIGNING_TIME,
-    read_sequence, read_set, read_oid, read_integer, read_octet_string,
-    read_utc_time, read_generalized_time, read_null, read_bit_string,
-    format_oid, sha256,
-)
-from .trust_policy import TrustPolicy, TrustPolicyResult, TrustLevel, RevocationStatus, DEFAULT_POLICY
-
-logger = logging.getLogger(__name__)
+from .trust_policy import TrustPolicy, TrustPolicyResult, TrustLevel, DEFAULT_POLICY
 
 
 class TimestampError(Exception):
@@ -94,214 +82,129 @@ def verify_timestamp(
     expected_hash: bytes,
     policy: Optional[TrustPolicy] = None,
     tsa_url: Optional[str] = None,
+    *,
+    expected_nonce: Optional[int] = None,
+    now=None,
 ) -> TimestampResult:
-    """Verify an RFC 3161 timestamp token against a trust policy.
+    """Authenticate a TimeStampResp against independently configured TSA roots.
 
-    Args:
-        token_path: Path to the .tsr or .der timestamp token file
-        expected_hash: The SHA-256 hash that should be in the timestamp imprint
-        policy: TrustPolicy for TSA validation (defaults to demo policy)
-        tsa_url: The TSA URL that issued this token (for allowlist check)
-
-    Returns:
-        TimestampResult with verification and trust-policy status.
+    expected_hash is the already-computed message imprint (SHA-256 of the
+    32 binary Merkle-root bytes in the bundle protocol). Certificates are
+    validated at authenticated genTime, with an explicit acceptance window
+    and future-time check. A configured nonce is compared before acceptance.
     """
-    if policy is None:
-        policy = DEFAULT_POLICY
+    from datetime import datetime, timezone, timedelta
+    from asn1crypto import tsp, x509 as asn1_x509
+    from cryptography.hazmat.primitives import serialization
+    from .cert_chain import CertChainValidator, pem_certificates, verify_timestamp_response
+    from .der import validate_der_input
 
-    errors: List[str] = []
-    trust_result = TrustPolicyResult(
-        passed=True,
-        revocation_status=policy.effective_revocation_status,
-        trust_level=policy.level.value.upper(),
-    )
-
-    # --- Fail-closed gate: STRICT with no revocation capability ---
-    if trust_result.revocation_status == RevocationStatus.FAIL_CLOSED:
-        trust_result.add_fail(
-            "STRICT trust level requires revocation checking but "
-            "CRL/OCSP is unavailable. Fail-closed. Configure crl_urls "
-            "or ocsp_responders and install cryptography."
-        )
-        trust_result.passed = False
-
-    # --- TSA provider allowlist ---
-    if not policy.is_tsa_allowed(tsa_url):
-        trust_result.add_fail(
-            f"TSA provider not in allowlist: {tsa_url or '(unknown)'}"
-        )
-
-    if not token_path.exists():
-        return TimestampResult(
-            valid=False,
-            errors=[f"Token file not found: {token_path}"],
-            trust_policy_result=trust_result,
-        )
-
-    token_bytes = token_path.read_bytes()
-
+    policy = policy or DEFAULT_POLICY
+    trust = TrustPolicyResult(passed=True, revocation_status=policy.effective_revocation_status,
+                              trust_level=policy.level.value.upper())
+    result = TimestampResult(valid=False, trust_policy_result=trust)
     try:
-        cursor = DerCursor(token_bytes)
-
-        # TimeStampResp ::= SEQUENCE { status PKIStatusInfo, timeStampToken TimeStampToken OPTIONAL }
-        resp_seq = read_sequence(cursor)
-
-        # PKIStatusInfo ::= SEQUENCE { status INTEGER, statusString ... }
-        status_seq = read_sequence(resp_seq)
-        status = read_integer(status_seq)
-        if status != 0:
-            errors.append(f"Timestamp response status: {status} (not granted)")
-
-        if resp_seq.eoi():
-            errors.append("No TimeStampToken in response")
-            return TimestampResult(
-                valid=False, errors=errors, trust_policy_result=trust_result
-            )
-
-        # TimeStampToken ::= ContentInfo (SignedData)
-        content_seq = read_sequence(resp_seq)
-        content_oid = read_oid(content_seq)
-
-        if content_oid != OID_PKCS7_SIGNED_DATA:
-            errors.append(
-                f"Expected SignedData OID, got {format_oid(content_oid)}"
-            )
-
-        # SignedData is EXPLICIT tagged [0]
-        tag = content_seq.read_tag()
-        if tag != 0xA0:
-            errors.append(f"Expected explicit tag 0xA0, got 0x{tag:02x}")
-        content_seq.read_length()
-
-        sd_seq = read_sequence(content_seq)
-
-        # version
-        version = read_integer(sd_seq)
-
-        # digestAlgorithms
-        digest_algos = read_set(sd_seq)
-
-        # encapContentInfo
-        eci_seq = read_sequence(sd_seq)
-        eci_oid = read_oid(eci_seq)
-
-        tst_info: Optional[TimestampInfo] = None
-        tst_raw: Optional[bytes] = None
-
-        # The content is EXPLICIT [0] tagged
-        if not eci_seq.eoi():
-            tag = eci_seq.read_tag()
-            if tag == 0xA0:
-                eci_seq.read_length()
-                tst_content = read_octet_string(eci_seq)
-                tst_info = _parse_tst_info(tst_content)
-                tst_raw = tst_content
-            else:
-                if tag != 0x05:  # NULL
-                    errors.append(f"Unexpected eContent tag: 0x{tag:02x}")
-
-        # certificates (optional — not fully extracted in demo mode)
-        cert_chain: List[bytes] = []
-
-        # signerInfos
-        signer_infos = read_set(sd_seq)
-
-        # === TRUST-POLICY CHECKS ===
-
-        # 1. Verify message imprint
-        imprint_matches = False
-        if tst_info is not None:
-            imprint_matches = tst_info.message_imprint == expected_hash
-            if imprint_matches:
-                trust_result.add_pass("Message imprint matches expected hash")
-            else:
-                trust_result.add_fail(
-                    f"Message imprint mismatch: "
-                    f"expected {expected_hash.hex()[:32]}..., "
-                    f"got {tst_info.message_imprint.hex()[:32]}..."
-                )
-                errors.append("Message imprint mismatch")
-
-        # 2. Hash algorithm acceptance
-        if tst_info is not None:
-            if policy.is_hash_algorithm_allowed(tst_info.message_imprint_alg):
-                trust_result.add_pass(
-                    f"Hash algorithm accepted: {tst_info.message_imprint_alg}"
-                )
-            else:
-                trust_result.add_fail(
-                    f"Hash algorithm rejected: {tst_info.message_imprint_alg}"
-                )
-
-        # 3. Policy OID acceptance
-        if tst_info is not None:
-            if policy.is_policy_allowed(tst_info.policy):
-                if policy.require_policy:
-                    trust_result.add_pass(f"TSA policy accepted: {tst_info.policy}")
-                else:
-                    trust_result.add_skip("Policy OID check not required")
-            else:
-                trust_result.add_fail(
-                    f"TSA policy OID not in allowlist: {tst_info.policy}"
-                )
-
-        # 4. Certificate chain validation (requires cryptography)
-        if policy.requires_certificate_chain():
-            try:
-                from .cert_chain import CertChainValidator
-                validator = CertChainValidator(policy)
-                tsa_cert_der = _extract_signing_certificate(sd_seq)
-                if tsa_cert_der:
-                    chain_result = validator.validate(tsa_cert_der)
-                    if chain_result.valid:
-                        trust_result.add_pass(
-                            f"Certificate chain valid: "
-                            f"{chain_result.tsa_cert_subject}"
-                        )
-                    else:
-                        for err in chain_result.errors:
-                            trust_result.add_fail(err)
-                else:
-                    trust_result.add_fail(
-                        "No TSA certificate found in timestamp token"
-                    )
-            except ImportError:
-                trust_result.add_fail(
-                    "Certificate chain validation unavailable "
-                    "(cryptography not installed)"
-                )
+        raw = token_path.read_bytes()
+        issues = validate_der_input(raw, strict=True)
+        if issues:
+            raise ValueError('; '.join(issues))
+        response = tsp.TimeStampResp.load(raw, strict=True)
+        if response.dump(force=True) != raw:
+            raise ValueError('Non-canonical DER timestamp response')
+        if response['status']['status'].native not in ('granted', 'granted_with_mods'):
+            raise ValueError('Timestamp response was not granted')
+        token = response['time_stamp_token']
+        if token['content_type'].native != 'signed_data':
+            raise ValueError('Timestamp token is not CMS SignedData')
+        sd = token['content']
+        if sd['encap_content_info']['content_type'].native != 'tst_info':
+            raise ValueError('CMS content is not TSTInfo')
+        info = sd['encap_content_info']['content'].parsed
+        mi = info['message_imprint']
+        alg = mi['hash_algorithm']['algorithm'].dotted
+        gen_time = info['gen_time'].native
+        result.tst_info = TimestampInfo(
+            version=1, policy=info['policy'].dotted,
+            message_imprint_alg=alg, message_imprint=mi['hashed_message'].native,
+            serial_number=info['serial_number'].native, gen_time=gen_time.isoformat(),
+            nonce=info['nonce'].native)
+        if info['version'].native != 'v1':
+            raise ValueError('Unsupported TSTInfo version')
+        result.imprint_matches = mi['hashed_message'].native == expected_hash
+        if not result.imprint_matches:
+            raise ValueError('Message imprint mismatch')
+        if not policy.is_hash_algorithm_allowed(alg):
+            raise ValueError('Timestamp imprint algorithm rejected by policy')
+        if not policy.is_policy_allowed(info['policy'].dotted):
+            raise ValueError('Timestamp policy OID rejected')
+        if policy.require_nonce_echo and expected_nonce is None:
+            raise ValueError('Nonce echo required: supply independently retained expected nonce')
+        if expected_nonce is not None and info['nonce'].native != expected_nonce:
+            raise ValueError('Timestamp nonce mismatch')
+        now = now or datetime.now(timezone.utc)
+        if gen_time.tzinfo is None or now.tzinfo is None:
+            raise ValueError('Timestamp verification requires timezone-aware UTC instants')
+        if policy.clock_tolerance < 0:
+            raise ValueError('Negative timestamp tolerance')
+        if gen_time > now + timedelta(seconds=policy.clock_tolerance):
+            raise ValueError('Timestamp is in the future')
+        if policy.timestamp_not_before and gen_time < policy.timestamp_not_before:
+            raise ValueError('Timestamp precedes trust window')
+        if policy.timestamp_not_after and gen_time > policy.timestamp_not_after:
+            raise ValueError('Timestamp exceeds trust window')
+        if policy.max_timestamp_age_seconds is not None:
+            if policy.max_timestamp_age_seconds < 0 or (now-gen_time).total_seconds() > policy.max_timestamp_age_seconds:
+                raise ValueError('Timestamp exceeds maximum age')
+        if not policy.is_tsa_allowed(tsa_url):
+            raise ValueError('TSA URL not in operator allowlist')
+        if policy.level == TrustLevel.DEMO or not policy.trusted_roots:
+            raise ValueError('TSA signature requires operator-configured STANDARD/STRICT trusted roots')
+        if policy.requires_revocation_check():
+            raise ValueError('Revocation required but authenticated CRL/OCSP validation is unavailable')
+        signers = sd['signer_infos']
+        if len(signers) != 1:
+            raise ValueError('Timestamp must have exactly one CMS signer')
+        signer = signers[0]
+        digest_oid = signer['digest_algorithm']['algorithm'].dotted
+        if not policy.is_hash_algorithm_allowed(digest_oid):
+            raise ValueError('CMS digest algorithm rejected')
+        sig_oid = signer['signature_algorithm']['algorithm'].dotted
+        # CMS rsaEncryption carries the digest separately in SignerInfo.
+        if sig_oid == '1.2.840.113549.1.1.1':
+            sig_oid = {'sha256': '1.2.840.113549.1.1.11', 'sha384': '1.2.840.113549.1.1.12',
+                       'sha512': '1.2.840.113549.1.1.13'}.get(signer['digest_algorithm']['algorithm'].native, '')
+        if not policy.is_signature_algorithm_allowed(sig_oid):
+            raise ValueError('CMS signature algorithm rejected')
+        certs = [c.chosen for c in sd['certificates'] if c.name == 'certificate']
+        certs += [asn1_x509.Certificate.load(c.public_bytes(serialization.Encoding.DER))
+                  for c in pem_certificates(policy.untrusted_certificates)]
+        certs = list({c.dump(): c for c in certs}.values())
+        sid = signer['sid']
+        if sid.name == 'issuer_and_serial_number':
+            matches = [c for c in certs if c.serial_number == sid.chosen['serial_number'].native
+                       and c.issuer.dump() == sid.chosen['issuer'].dump()]
         else:
-            trust_result.add_skip(
-                f"Certificate chain validation not required "
-                f"(trust level: {policy.level.value})"
-            )
-
-        # Parsing an imprint is not authentication. CMS verification is not implemented.
-        errors.append("TSA signature and trusted certificate path are not verified; external anchoring unavailable")
-        trust_result.add_fail(errors[-1])
-
-        overall_valid = (
-            len(errors) == 0
-            and imprint_matches
-            and tst_info is not None
-            and trust_result.passed
-        )
-
-        return TimestampResult(
-            valid=overall_valid,
-            tst_info=tst_info,
-            cert_chain=cert_chain,
-            imprint_matches=imprint_matches,
-            errors=errors,
-            trust_policy_result=trust_result,
-        )
-
-    except DerError as e:
-        errors.append(f"DER parsing error: {e}")
-        trust_result.add_fail(f"DER parsing failed: {e}")
-        return TimestampResult(
-            valid=False, errors=errors, trust_policy_result=trust_result
-        )
+            matches = [c for c in certs if c.key_identifier == sid.chosen.native]
+        if len(matches) != 1:
+            raise ValueError('TSA signer certificate missing or ambiguous; supply untrusted_certificates')
+        selected = matches[0]
+        chain = [c.dump() for c in certs if c.dump() != selected.dump()]
+        checked = CertChainValidator(policy).validate(selected.dump(), chain, verification_time=gen_time)
+        if not checked.valid:
+            raise ValueError('; '.join(checked.errors))
+        # Full RFC 3161/ESS/CMS validation, not just a bare signature operation.
+        verify_timestamp_response(raw, expected_hash, policy, gen_time, [c.dump() for c in certs])
+        result.cert_chain = [c.dump() for c in certs]
+        result.signature_verified = True
+        result.trust_verified = True
+        result.valid = True
+        trust.add_pass('CMS signature, ESS signer binding and trusted certificate path verified')
+        trust.add_pass('Message imprint and timestamp trust window verified')
+    except Exception as exc:
+        # Every malformed token/backend failure is a structured verification failure.
+        result.errors.append(str(exc))
+        trust.add_fail(str(exc))
+    return result
 
 
 def verify_dual_anchor(
@@ -387,72 +290,3 @@ def verify_dual_anchor(
             secondary=secondary,
             errors=all_errors,
         )
-
-
-def _parse_tst_info(data: bytes) -> Optional[TimestampInfo]:
-    """Parse TSTInfo from raw bytes."""
-    try:
-        cursor = DerCursor(data)
-        seq = read_sequence(cursor)
-
-        version = read_integer(seq)
-        policy_oid = format_oid(read_oid(seq))
-
-        # MessageImprint ::= SEQUENCE { hashAlgorithm, hashedMessage }
-        mi_seq = read_sequence(seq)
-        mi_alg_seq = read_sequence(mi_seq)
-        mi_alg = format_oid(read_oid(mi_alg_seq))
-        read_null(mi_alg_seq)
-        mi_hash = read_octet_string(mi_seq)
-
-        serial = read_integer(seq)
-        gen_time = read_generalized_time(seq)
-
-        nonce = None
-        accuracy = None
-
-        if not seq.eoi():
-            tag = seq.peek_tag()
-            if tag == 0x02:  # INTEGER (nonce)
-                nonce = read_integer(seq)
-
-        return TimestampInfo(
-            version=version,
-            policy=policy_oid,
-            message_imprint_alg=mi_alg,
-            message_imprint=mi_hash,
-            serial_number=serial,
-            gen_time=gen_time,
-            nonce=nonce,
-            accuracy=accuracy,
-        )
-    except DerError:
-        return None
-
-
-def _extract_signing_certificate(sd_seq: DerCursor) -> Optional[bytes]:
-    """Extract the TSA signing certificate from SignedData certificates field.
-
-    The certificates field is IMPLICIT [0] SET OF Certificate.
-    Certificate ::= SEQUENCE { ... }
-    """
-    if sd_seq.eoi():
-        return None
-
-    tag = sd_seq.peek_tag()
-    if tag != 0xA0:
-        return None
-
-    try:
-        certs_set = read_set(sd_seq)
-        if certs_set.eoi():
-            return None
-
-        # Read the first certificate
-        cert_seq = read_sequence(certs_set)
-        # The raw certificate bytes span from the SEQUENCE tag to end of this cert
-        start_pos = certs_set.pos - cert_seq.remaining() - 4  # Approximate
-        # Fall back to re-parsing: just return what we can extract
-        return None  # Defer to proper extraction in cert_chain.py
-    except DerError:
-        return None

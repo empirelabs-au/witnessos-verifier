@@ -2,7 +2,7 @@
 
 [![OpenSSF Best Practices - Baseline 1](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.bestpractices.dev%2Fprojects%2F14138.json&query=badge_percentage_baseline_1&label=OpenSSF%20Baseline%201&suffix=%25&color=success)](https://www.bestpractices.dev/projects/14138) [![OpenSSF Best Practices - Baseline 2](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.bestpractices.dev%2Fprojects%2F14138.json&query=badge_percentage_baseline_2&label=OpenSSF%20Baseline%202&suffix=%25&color=success)](https://www.bestpractices.dev/projects/14138) [![OpenSSF Best Practices - Baseline 3](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.bestpractices.dev%2Fprojects%2F14138.json&query=badge_percentage_baseline_3&label=OpenSSF%20Baseline%203&suffix=%25&color=success)](https://www.bestpractices.dev/projects/14138)
 
-> **Launch status: NOT READY for E4 verification.** The attack review found false E4 acceptance in the original verifier and PR #10. This branch contains fail-closed containment, not a completed external-trust implementation. See [ATTACK-REVIEW.md](ATTACK-REVIEW.md).
+> **E4 verification implemented with explicit external trust.** Real RFC 3161 signatures and independent custodian receipts are verified. The existing fixtures still lack production retention receipts; Stripe also has a root mismatch. See [E4-BUNDLE-FORMAT.md](E4-BUNDLE-FORMAT.md) and [E4-IMPLEMENTATION-REPORT.md](E4-IMPLEMENTATION-REPORT.md).
 
 Standalone verifier for WitnessOS evidence bundles. It checks event and manifest Ed25519 signatures, canonical event chains, sequence bounds, event membership, and binding to the signed batch root. Bundled keys prove consistency with those keys; authenticate their identity independently.
 
@@ -14,7 +14,7 @@ Standalone verifier for WitnessOS evidence bundles. It checks event and manifest
 | E3 | E2 plus a signed event recording provider acknowledgement |
 | E4 | E3 plus bound inclusion proof, authenticated timestamp and authenticated WORM retention evidence |
 
-E3 records the signer's claim about a provider response; it does not independently authenticate a provider or query a live service. E4 cannot currently be substantiated: CMS signature verification, trusted TSA path integration and authenticated remote retention verification are unavailable. A matching local WORM checksum is not immutability evidence.
+E3 records the signer's claim about a provider response; it does not independently authenticate a provider or query a live service. E4 requires operator-provisioned TSA trust roots and an independently signed storage-custodian receipt over the timestamped snapshot. A matching local WORM checksum is not immutability evidence.
 
 The CLI returns exit 1 when supplied evidence fails or cannot be verified. A lower grade may describe checks that passed; it does not override an invalid bundle result.
 
@@ -32,13 +32,14 @@ cd witnessos-verifier
 pip install -e ".[dev]"
 ```
 
-Requires Python 3.12+.
+Requires Python 3.12+ and OpenSSL 3 on PATH for timestamp authentication.
 
 ## Usage
 
 ```bash
-# Verify an evidence bundle (E4 authentication currently unavailable)
-witnessos-verifier verify ./path/to/evidence-bundle/
+# Verify using independently provisioned trust
+witnessos-verifier verify ./path/to/evidence-bundle/ \
+  --trust-policy /path/to/operator-policy.json --tsa-url https://freetsa.org/tsr
 
 # Verify in Alpha mode - grades capped at E3
 witnessos-verifier verify --alpha ./path/to/evidence-bundle/
@@ -51,8 +52,8 @@ witnessos-verifier --version
 
 Fixtures remain byte-for-byte unchanged. Their historical README expectations are not the current verifier's result.
 
-- `e4-gmail-approved-send`: signatures and signed event-root binding pass; timestamp authentication is unavailable. E3, invalid bundle, exit 1.
-- `e4-stripe-refund`: event signatures pass, but canonical events do not reproduce the signed Merkle root with this repository's algorithm; proof leaf binding also fails. E1, invalid bundle, exit 1.
+- `e4-gmail-approved-send`: signatures and signed event-root binding pass; the real FreeTSA signature passes with operator trust, but an independent retention receipt is missing. E3, invalid bundle, exit 1.
+- `e4-stripe-refund`: event signatures and the real FreeTSA timestamp pass, but canonical events do not reproduce the signed Merkle root with this repository's algorithm; proof leaf binding also fails. E1, invalid bundle, exit 1.
 
 No fixture has been demonstrated to be valid E4 by this review. Resolve the Stripe producer's leaf/tree convention against an authoritative protocol before claiming compatibility; do not special-case fixture hashes.
 
@@ -93,15 +94,23 @@ src/witnessos_verifier/
 └── grades.py            # E1-E4 evidence grade derivation
 ```
 
-## Timestamp limitations
+## Timestamp and retention trust
 
-The current parser checks the message imprint and some policy fields. It does not authenticate CMS SignedData. The certificate extractor is incomplete, nonce enforcement is absent, and revocation fetching/verification is unimplemented. Configuration alone must never report revocation as checked. These limitations now fail closed; production external anchoring remains a launch blocker.
+CMS signatures, ESS signer binding, certificate paths at genTime, timestamping
+purpose/EKU, digest/policy/nonce constraints and the timestamp trust window are
+verified. STANDARD does not check revocation. STRICT/revocation-required policies
+fail closed until authenticated CRL/OCSP support exists. Signed retention receipts
+prove what an independently trusted custodian attested; the offline verifier does
+not query live storage. See the exact [bundle recipe](E4-BUNDLE-FORMAT.md).
 
 ## Dependencies
 
 - **pynacl** - Ed25519 signature verification
 - **click** - CLI
-- Optional trust and S3 adapters have additional dependencies
+- **asn1crypto** - ASN.1/CMS structure parsing
+- **cryptography** - X.509 certificate parsing
+- **OpenSSL 3 executable** - RFC 3161 signature and certificate-path verification
+- Optional S3 adapters require boto3; they are not used for E4 verification
 
 No gateway, no credentials, no network. **Verification happens on your machine.**
 
@@ -110,8 +119,7 @@ No gateway, no credentials, no network. **Verification happens on your machine.*
 The project follows a deliberate, minimal dependency policy:
 
 1. **Selection** - new dependencies are avoided unless a standard-library
-   alternative does not exist. The current sole runtime dependency (PyNaCl)
-   exists because the standard library does not expose Ed25519 signing.
+   alternative does not exist. Cryptographic and ASN.1 dependencies support real signature and certificate verification; see `pyproject.toml`.
 2. **Obtaining** - dependencies are declared in `pyproject.toml` and pinned
    through the `uv.lock` lockfile, so every build uses a reproducible set of
    package versions.

@@ -71,13 +71,16 @@ class VerifyResult:
         if self.timestamp_result:
             status = "PASS" if self.timestamp_result.valid else "FAIL"
             lines.append(f"  TSA:     {status}")
+            lines.append(f"  TSA signature: {self.timestamp_result.signature_verified}")
+            lines.append(f"  TSA trusted path: {self.timestamp_result.trust_verified}")
             if self.timestamp_result.trust_policy_result:
                 tr = self.timestamp_result.trust_policy_result
                 lines.append(f"  Trust:   {tr.trust_level} → {tr.revocation_status.value}")
 
         if self.worm_result:
             status = "PASS" if self.worm_result.valid else "FAIL"
-            lines.append(f"  WORM checksum: {status} (retention unverified)")
+            lines.append(f"  WORM:    {status}")
+            lines.append(f"  Retention authenticated: {self.worm_result.retention_verified}")
 
         if self.errors:
             lines.append("")
@@ -88,7 +91,7 @@ class VerifyResult:
         return "\n".join(lines)
 
 
-def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
+def verify(bundle_path: Path, alpha_mode: bool = False, *, trust_policy=None, tsa_url=None, expected_nonce=None) -> VerifyResult:
     """Verify a WitnessOS evidence bundle.
 
     The bundle must contain:
@@ -112,6 +115,11 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
 
     if any(p.is_symlink() for p in bundle_path.rglob("*")):
         return VerifyResult(bundle_path=bundle_path, valid=False, errors=["Symlinks are not allowed in evidence bundles"])
+
+    if trust_policy:
+        for root in trust_policy.trusted_roots:
+            if Path(root).resolve().is_relative_to(bundle_path):
+                raise VerifyError('Trusted TSA roots must be provisioned outside the evidence bundle')
 
     # 1. Load events
     try:
@@ -181,7 +189,10 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
     timestamp_result = None
     ts_dir = bundle_path / "timestamp"
     if ts_dir.exists():
-        ts_files = list(ts_dir.glob("*.tsr")) + list(ts_dir.glob("*.der"))
+        ts_files = sorted(ts_dir.glob("*.tsr")) + sorted(ts_dir.glob("*.der"))
+        if len(ts_files) > 1:
+            errors.append("Ambiguous timestamp bundle: provide exactly one batch timestamp")
+            ts_files = []
         if ts_files:
             # Use batch manifest root hash as expected imprint
             expected_hash = None
@@ -199,7 +210,7 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
 
             if expected_hash:
                 try:
-                    timestamp_result = verify_timestamp(ts_files[0], expected_hash)
+                    timestamp_result = verify_timestamp(ts_files[0], expected_hash, trust_policy, tsa_url, expected_nonce=expected_nonce)
                 except Exception as e:
                     errors.append(f"Timestamp verification error: {e}")
             else:
@@ -212,12 +223,13 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
     worm_dir = bundle_path / "worm"
     if worm_dir.exists():
         try:
-            worm_result = verify_worm_bundle(worm_dir, bundle_path)
+            worm_result = verify_worm_bundle(worm_dir, bundle_path, trust_policy, timestamp_result)
         except Exception as e:
             errors.append(f"WORM verification error: {e}")
 
     warnings.append("Bundled public keys establish signature consistency, not signer identity; authenticate keys independently.")
-    warnings.append("Local WORM checksums do not prove remote retention or immutability.")
+    if not worm_result or not worm_result.retention_verified:
+        warnings.append("Local WORM checksums do not prove remote retention or immutability.")
 
     # 9. Derive grade
     grade = derive_grade(
