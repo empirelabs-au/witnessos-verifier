@@ -21,8 +21,10 @@ def main():
 
     This verifier reads WitnessOS evidence bundles and cryptographically
     checks event signatures, hash chains, and signed batch/Merkle binding.
-    Timestamp authentication and remote WORM retention are unavailable;
-    this release cannot substantiate E4.
+    When trust roots are supplied (--trust-roots), RFC 3161 timestamp
+    signatures are verified against them and anchored WORM retention is
+    authenticated — enabling honest E4 affirmation. Without roots, the
+    verifier fails closed below E4.
 
     No gateway, credential broker, or key management code is included.
     """
@@ -34,7 +36,22 @@ def main():
 @click.option("--json", "output_json", is_flag=True, help="Output results as JSON")
 @click.option("--quiet", "-q", is_flag=True, help="Only print PASS/FAIL")
 @click.option("--alpha", "alpha_mode", is_flag=True, help="Alpha mode: cap max evidence grade at E3")
-def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool, alpha_mode: bool = False):
+@click.option(
+    "--trust-roots",
+    "trust_root_paths",
+    multiple=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Operator-supplied trusted CA PEM(s) for RFC 3161 TSA signature "
+    "verification. Repeatable. E4 is only affirmable when the timestamp "
+    "anchors to one of these roots.",
+)
+def verify_cmd(
+    bundle_path: Path,
+    output_json: bool,
+    quiet: bool,
+    alpha_mode: bool = False,
+    trust_root_paths: tuple = (),
+):
     """Verify a WitnessOS evidence bundle.
 
     BUNDLE_PATH: Path to the evidence bundle directory containing
@@ -42,7 +59,16 @@ def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool, alpha_mode: bo
     timestamp/, and worm/.
     """
     try:
-        result = verify(bundle_path, alpha_mode=alpha_mode)
+        from .trust_policy import TrustPolicy, TrustLevel
+
+        if trust_root_paths:
+            policy = TrustPolicy(
+                level=TrustLevel.STANDARD,
+                trusted_roots=list(trust_root_paths),
+            )
+        else:
+            policy = None  # DEMO default: fail closed below E4
+        result = verify(bundle_path, alpha_mode=alpha_mode, policy=policy)
     except VerifyError as e:
         click.echo(f"ERROR: {e}", err=True)
         sys.exit(2)
