@@ -17,6 +17,7 @@
     "merkle_proof.json": "9f21e73dcd2af32b8e06896f959c26da567ff5f0ff9323c021669fd8512e73d0",
     "timestamp/batch_timestamp.tsr": "a72c4f727d60a1fc78ab383b03ba2a8cbc5899a16f051223cdb895a07bba539f"
   },
-  "stored_at": "2026-06-28T05:37:30Z",
-  "stored_hash": "490f8667a2036f4d34b2838cb07231bacbada0ca5f0c6dc52999948d5bd0d81f"
+  "stored_at": "2026-09-08T00:39:00Z",
+  "stored_hash": "9c804ab94a35fb52bb4b48081653637db6ffedcc31cdaa28d429c883ce69eb7c",
+  "anchored_root": "2f99b1b1846daf58864aa28ce32e28a0c7510b00591f98c3b85604ba8964ee7b"
 }

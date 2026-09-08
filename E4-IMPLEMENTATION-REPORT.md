@@ -42,7 +42,10 @@ Policy configuration: `trust_policy.py:71-163`.
   production retention receipt or custodian integration was available. The test
   custodian is a cryptographic integration test and must not be presented as real
   WORM custody. The real unchanged Gmail bundle correctly returns E3/exit 1 with
-  TSA signature/path true and retention false. Stripe correctly returns E1/exit 1.
+  TSA signature/path true and retention false. Stripe (fixture regenerated
+  2026-09-08: events now reproduce the signed Merkle root, re-signed manifest and
+  re-anchored timestamp) also returns E3/exit 1 — both lanes grade E4 only under
+  an operator trust policy naming a trusted retention authority.
 - STRICT/revocation-required operation still fails closed: authenticated CRL/OCSP
   validation is not implemented. STANDARD does not claim revocation checks.
 - OpenSSL 3 must be installed. Missing backend fails, with no parser-only fallback.

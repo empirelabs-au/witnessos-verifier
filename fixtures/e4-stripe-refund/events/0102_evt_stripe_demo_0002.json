@@ -13,10 +13,19 @@
     "target_charge": "ch_demo_0001",
     "target_currency": "aud"
   },
-  "prev_hash": "25b615533c68177e514c5f835a3a3114a70ee9fbd0d3d8b5832a588b8c1aee2f",
+  "prev_hash": "dcfa88de87a6c5f2976a63f7b90e3f60843ad0422458bd2171f7cf1d9e12ca95",
   "seq": 102,
   "signed": {
+    "algorithm": "Ed25519",
     "key_id": "key_stripe_demo_001",
-    "signature": "BdZVzb2FFSfNn4uRzZ/10UsXbxP20+hTLudd/kzttYsMo4RDe8R4hNvDZlneDQpq4un/DVvPDQ793J6SJE9vAg=="
+    "signed_headers": [
+      "case_id",
+      "event_id",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "seq"
+    ],
+    "signature": "iAKq/66Z14ZJ+1bQPBvM9ampS2NJqhAvOnVOkRVZHIG07KW28yETD5BC+jZw/KEnxiyZNRIssAYYOd4Yw3WPDA=="
   }
 }
