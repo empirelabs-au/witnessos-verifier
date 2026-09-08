@@ -27,7 +27,7 @@ pip install witnessos-verifier
 Or from source:
 
 ```bash
-git clone https://github.com/empirelabs-au/witnessos-verifier.git
+git clone https://github.com/narko4u/witnessos-verifier.git
 cd witnessos-verifier
 pip install -e ".[dev]"
 ```
@@ -64,7 +64,7 @@ No fixture has been demonstrated to be valid E4 without an independent custodian
 
 ```bash
 # Clone
-git clone https://github.com/empirelabs-au/witnessos-verifier.git
+git clone https://github.com/narko4u/witnessos-verifier.git
 cd witnessos-verifier
 
 # Install dev dependencies

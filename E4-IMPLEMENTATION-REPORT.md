@@ -1,7 +1,7 @@
 # E4 authentication implementation report
 
 Base: `648fee3e1c73a2a1ba64385d662276ffda4cd24f` (merged PR #11).
-Branch: `feature/authenticated-e4`. Scope: `empirelabs-au/witnessos-verifier` only.
+Status: resolved and merged (2026-09-08). Scope: this repository only.
 
 ## Phase status
 

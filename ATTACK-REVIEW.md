@@ -1,10 +1,12 @@
 # Adversarial launch review
 
-Verdict: **not-ready**.
-
-Scope: `empirelabs-au/witnessos-verifier`, main `a5a30fa2e1d92964663e2c5686c4f445948af2e1`, PR #10 head `ad056f866201e9274178bec683d720768af42269`. Fix branch: `attack/bundle-integrity`, based on main and incorporating PR #10's grading/vocabulary fixes. Do not merge both blindly; this PR supersedes its code changes.
-
-Direct HTTPS clone failed: `fatal: could not read Username for 'https://github.com': No such device or address`. Instead the authenticated GitHub connector retrieved all 68 files at the pinned main SHA. Every Git blob SHA, the full tree SHA, and the reconstructed shallow signed commit SHA matched upstream. This is an exact shallow Git snapshot, not a successful native clone. No credentials were read or changed. Connector identity: narko4u. Only this repository was accessed/modified.
+Verdict: **resolved** (2026-09-08). This review documented false-E4 acceptance in
+the original verifier and drove the fail-closed containment (PR #11) and the
+authenticated E4 implementation that followed (PR #12/#13: real RFC 3161
+signature verification and independent retention receipts). See
+[E4-IMPLEMENTATION-REPORT.md](E4-IMPLEMENTATION-REPORT.md) for the current
+implementation status. The findings below are the historical record of the
+review; the code has moved on from the states described.
 
 ## Findings
 
