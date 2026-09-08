@@ -1,3 +1,9 @@
+# WitnessOS Verifier
+# Copyright (c) 2026 Empire Labs Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+# Source: https://github.com/empirelabs-au/witnessos-verifier
+# Provenance: WOSV-2026-09-09-A7K2 (do not remove attribution)
+
 """Minimal ASN.1 DER cursor for RFC 3161 timestamp verification.
 
 No external ASN.1 library dependency. Handles enough DER to parse

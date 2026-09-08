@@ -1,3 +1,9 @@
+# WitnessOS Verifier
+# Copyright (c) 2026 Empire Labs Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+# Source: https://github.com/empirelabs-au/witnessos-verifier
+# Provenance: WOSV-2026-09-09-A7K2 (do not remove attribution)
+
 """TSA certificate paths and RFC 3161 signatures via OpenSSL 3.
 
 Trust comes exclusively from operator-provisioned roots. Token certificates
