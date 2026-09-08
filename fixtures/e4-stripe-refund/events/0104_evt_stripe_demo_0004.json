@@ -9,10 +9,19 @@
     "provider_receipt_hash": "demo_stripe_receipt_hash_001",
     "stripe_request_id": "req_demo_0001"
   },
-  "prev_hash": "5ac597e52793e3962c3660cefd7b4e8ee4da62fe5a5513d9991ec00223c52429",
+  "prev_hash": "bfbaf47dfaf90510eb33df7e0f0fd098723b200cfffed9bd3e070c730a0d5a45",
   "seq": 104,
   "signed": {
+    "algorithm": "Ed25519",
     "key_id": "key_stripe_demo_001",
-    "signature": "e+p9lyDtNZZko6a55SVYxbfrp4R53pDXp+72LKswLXixOM8iTC3m6OOq3lZbzINCZloIvW2yxARdwtLFbI5RAg=="
+    "signed_headers": [
+      "case_id",
+      "event_id",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "seq"
+    ],
+    "signature": "uh+2ewlgxfmCFy7J2RrUA7fcA4p/G1ig7XOsAnnwlBG6rc32O8XkDHDtFE0LpKx9jI8hzjfnCWF/0NRBJKa9AQ=="
   }
 }

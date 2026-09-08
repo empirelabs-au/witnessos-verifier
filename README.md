@@ -50,12 +50,15 @@ witnessos-verifier --version
 
 ## Example fixtures
 
-Fixtures remain byte-for-byte unchanged. Their historical README expectations are not the current verifier's result.
+Fixtures are unchanged from the upstream review except `e4-stripe-refund`, whose
+events/root/proof/timestamp were regenerated on 2026-09-08 so canonical events
+reproduce the signed Merkle root (previously the root binding failed, capping the
+lane at E1).
 
 - `e4-gmail-approved-send`: signatures and signed event-root binding pass; the real FreeTSA signature passes with operator trust, but an independent retention receipt is missing. E3, invalid bundle, exit 1.
-- `e4-stripe-refund`: event signatures and the real FreeTSA timestamp pass, but canonical events do not reproduce the signed Merkle root with this repository's algorithm; proof leaf binding also fails. E1, invalid bundle, exit 1.
+- `e4-stripe-refund`: canonical events now reproduce the signed Merkle root (fixture regenerated 2026-09-08); event signatures and the real FreeTSA signature pass with operator trust, but an independent retention receipt is missing. E3, invalid bundle, exit 1.
 
-No fixture has been demonstrated to be valid E4 by this review. Resolve the Stripe producer's leaf/tree convention against an authoritative protocol before claiming compatibility; do not special-case fixture hashes.
+No fixture has been demonstrated to be valid E4 without an independent custodian receipt. Both fixtures grade E4 only when the operator trust policy names a retention authority whose signed receipt is present (see E4-IMPLEMENTATION-REPORT.md). Do not present the test custodian as real WORM custody.
 
 ## Development
 

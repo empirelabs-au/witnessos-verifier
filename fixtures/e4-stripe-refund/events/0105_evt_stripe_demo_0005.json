@@ -15,10 +15,19 @@
     "refund_id": "re_demo_0001",
     "status": "succeeded"
   },
-  "prev_hash": "6f8e64e4e9efb332a1b5d72f1341735317e7de8b86ca2b3d1351061a1b6844c8",
+  "prev_hash": "6a1c390e657aba931abe22e093b365d6845e1ced8e3e22d8e65dce628cf47099",
   "seq": 105,
   "signed": {
+    "algorithm": "Ed25519",
     "key_id": "key_stripe_demo_001",
-    "signature": "6OfIDQIvH6hHvh5D47ZX8e+nP7/KNQdGA8dchX+BuXyHsX4yD9mRbIBLOLr2l6nimtSsRaGpBWWOJN0Sp1sHAA=="
+    "signed_headers": [
+      "case_id",
+      "event_id",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "seq"
+    ],
+    "signature": "9SJjfyW6E04GsfcAJb94nTAC+2pStFLHf/CUwECRz8va/nS7qX72oP2157Jh9Mh0GncuiE8ASQ5/9CKtkqacBQ=="
   }
 }

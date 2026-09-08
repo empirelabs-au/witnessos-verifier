@@ -103,7 +103,7 @@ def test_future_timestamp_rejected(bundle_path, tsa_policy):
 def test_actual_nonce(bundle_path, tsa_policy):
     p = bundle_path.parent/'e4-stripe-refund'
     policy = replace(tsa_policy, require_nonce_echo=True)
-    good = verify_timestamp(p/'timestamp/batch_timestamp.tsr', imprint(p), policy, TSA, expected_nonce=0x96AD64152740F7C4)
+    good = verify_timestamp(p/'timestamp/batch_timestamp.tsr', imprint(p), policy, TSA, expected_nonce=0xDF53C2B513C42038)
     bad = verify_timestamp(p/'timestamp/batch_timestamp.tsr', imprint(p), policy, TSA, expected_nonce=1)
     assert good.valid, good.errors
     assert not bad.valid and 'nonce mismatch' in bad.errors[0]
@@ -188,7 +188,7 @@ def test_original_seven_with_real_trust(controlled_e4, attack):
 
 
 def test_fixtures_have_real_tsa_but_no_retention(bundle_path, tsa_policy):
-    for name, grade in [('e4-gmail-approved-send', 'E3'), ('e4-stripe-refund', 'E1')]:
+    for name, grade in [('e4-gmail-approved-send', 'E3'), ('e4-stripe-refund', 'E3')]:
         r = verify(bundle_path.parent/name, trust_policy=tsa_policy, tsa_url=TSA)
         assert r.timestamp_result.valid, r.errors
         assert r.evidence_grade == grade and not r.valid

@@ -33,7 +33,8 @@ class TestE3VocabularyBothForms:
         assert any(e.event_type in PROVIDER_ACK_TYPES for e in load_events(stripe))
         result = verify(stripe)
         assert not result.valid
-        assert "Loaded events do not match signed Merkle root" in result.errors
+        assert "Authenticated retention missing" in " ".join(result.errors)
+        assert result.evidence_grade in ("E3",)
 
     def test_dot_vocabulary_confirmed(self):
         from witnessos_verifier.grades import derive_grade
