@@ -23,6 +23,30 @@ jobs:
           languages: python
           queries: security-and-quality
       - uses: github/codeql-action/analyze@v4
+        with:
+          upload: never
+      - name: Fail on CodeQL findings (SARIF gate)
+        run: |
+          python3 - <<'EOF'
+          import json, glob, sys
+          findings = []
+          for f in glob.glob('results/*.sarif'):
+              with open(f) as fh:
+                  sarif = json.load(fh)
+              for run in sarif.get('runs', []):
+                  for res in run.get('results', []):
+                      lvl = res.get('level', 'warning')
+                      if lvl in ('error', 'warning'):
+                          locs = res.get('locations', [{}])
+                          loc = locs[0].get('physicalLocation', {}).get('artifactLocation', {}).get('uri', '?') if locs else '?'
+                          findings.append(f"{lvl}: {res.get('ruleId','?')} at {loc}")
+          if findings:
+              print("CodeQL findings (SAST gate FAIL):")
+              for x in findings[:20]:
+                  print("  -", x)
+              sys.exit(1)
+          print("CodeQL clean: no error/warning findings")
+          EOF
 
   sca:
     name: SCA (OSV-Scanner)
