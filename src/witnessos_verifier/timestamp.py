@@ -18,6 +18,9 @@ The verifier:
 
 import hashlib
 import logging
+import os
+import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -33,6 +36,14 @@ from .der import (
 from .trust_policy import TrustPolicy, TrustPolicyResult, TrustLevel, RevocationStatus, DEFAULT_POLICY
 
 logger = logging.getLogger(__name__)
+
+_OPENSSL_TIMEOUT = 30
+_OPENSSL_MINIMAL_ENV = {
+    "PATH": "/usr/bin:/bin:/usr/local/bin",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "HOME": "/tmp",
+}
 
 
 class TimestampError(Exception):
@@ -87,6 +98,99 @@ class DualAnchorResult:
     @property
     def is_degraded(self) -> bool:
         return self.grade == "E4-degraded"
+
+
+def _extract_cert_paths_from_bundle(token_path: Path, extra_dirs=None) -> Optional[List[Path]]:
+    """Find PEM certs (token-adjacent or in supplied trust dirs) to pass as
+    -untrusted chain material.
+
+    Only ever used as UNTRUSTED chain material for OpenSSL chain building —
+    never as roots. FreeTSA replies do not embed their signing certificate,
+    so the operator supplies it alongside the trust root (e.g. a TSA leaf
+    cert in the same trust directory).
+    """
+    certs = []
+    dirs = [token_path.parent]
+    if extra_dirs:
+        dirs.extend(extra_dirs)
+    seen = set()
+    for d in dirs:
+        if not d or not d.exists():
+            continue
+        for ext in ("*.pem", "*.crt", "*.cer"):
+            for p in d.glob(ext):
+                if p not in seen:
+                    seen.add(p)
+                    certs.append(p)
+    return list(certs) if certs else None
+
+
+def _openssl_verify_signature(
+    token_path: Path,
+    expected_hash: bytes,
+    trusted_roots: List[Path],
+    untrusted_certs: Optional[List[Path]] = None,
+) -> Tuple[bool, str]:
+    """Verify an RFC 3161 token's CMS signature via OpenSSL ts -verify.
+
+    Uses OpenSSL as the cryptographic authority (subprocess, hard timeouts,
+    minimal environment). The token is a full TimeStampResp, so '-token_in'
+    is NOT used. Trust roots are operator-supplied; certificates from the
+    bundle are only ever passed as -untrusted chain material, never as
+    roots (R7: never let evidence authenticate itself).
+
+    Returns (valid, detail).
+    """
+    # Concatenate trusted roots into a CAfile (write to temp).
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".pem", delete=False) as tmp:
+            for root in trusted_roots:
+                data = root.read_bytes()
+                if data and not data.endswith(b"\n"):
+                    data += b"\n"
+                tmp.write(data)
+            ca_path = tmp.name
+    except Exception as e:
+        return False, f"cannot read trusted roots: {e}"
+
+    untrusted_path = None
+    try:
+        cmd = ["openssl", "ts", "-verify", "-in", str(token_path)]
+        cmd += ["-digest", expected_hash.hex()]
+        cmd += ["-CAfile", ca_path]
+        if untrusted_certs:
+            try:
+                with tempfile.NamedTemporaryFile(suffix=".pem", delete=False) as tmp:
+                    for cert in untrusted_certs:
+                        data = cert.read_bytes()
+                        if data and not data.endswith(b"\n"):
+                            data += b"\n"
+                        tmp.write(data)
+                    untrusted_path = tmp.name
+                cmd += ["-untrusted", untrusted_path]
+            except Exception as e:
+                return False, f"cannot read untrusted certs: {e}"
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True,
+            timeout=_OPENSSL_TIMEOUT, env=_OPENSSL_MINIMAL_ENV,
+        )
+        combined = proc.stdout + proc.stderr
+        valid = proc.returncode == 0 and "Verification: OK" in combined
+        detail = combined.strip().splitlines()[-1] if combined.strip() else f"exit {proc.returncode}"
+        return valid, detail
+    except FileNotFoundError:
+        return False, "OpenSSL binary not found"
+    except subprocess.TimeoutExpired:
+        return False, "OpenSSL ts -verify timed out"
+    except Exception as e:
+        return False, f"openssl error: {e}"
+    finally:
+        for p in (ca_path, untrusted_path):
+            if p:
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
 
 
 def verify_timestamp(
@@ -245,8 +349,15 @@ def verify_timestamp(
                     f"TSA policy OID not in allowlist: {tst_info.policy}"
                 )
 
-        # 4. Certificate chain validation (requires cryptography)
-        if policy.requires_certificate_chain():
+        # 4. Certificate chain validation (requires cryptography).
+        # When operator trust roots ARE configured, step 5 (OpenSSL ts
+        # -verify against those roots) is the authoritative chain +
+        # signature authentication — tokens are not required to embed
+        # their own chain (FreeTSA replies do not). The in-token
+        # extraction path below is only a fallback when no external
+        # roots were supplied; without external roots it cannot
+        # establish trust, so it still fails closed at step 5.
+        if policy.requires_certificate_chain() and not policy.trusted_roots:
             try:
                 from .cert_chain import CertChainValidator
                 validator = CertChainValidator(policy)
@@ -276,9 +387,43 @@ def verify_timestamp(
                 f"(trust level: {policy.level.value})"
             )
 
-        # Parsing an imprint is not authentication. CMS verification is not implemented.
-        errors.append("TSA signature and trusted certificate path are not verified; external anchoring unavailable")
-        trust_result.add_fail(errors[-1])
+        # 5. CMS signature authentication via OpenSSL (R7: evidence must
+        # never authenticate itself; roots are operator-supplied).
+        sig_valid, sig_detail = False, "not attempted"
+        if policy.trusted_roots:
+            untrusted = _extract_cert_paths_from_bundle(
+                token_path,
+                extra_dirs=[p.parent for p in policy.trusted_roots],
+            )
+            sig_valid, sig_detail = _openssl_verify_signature(
+                token_path,
+                expected_hash,
+                list(policy.trusted_roots),
+                untrusted,
+            )
+            if sig_valid:
+                trust_result.add_pass(
+                    f"TSA signature verified (OpenSSL ts -verify)"
+                )
+            else:
+                errors.append(
+                    f"TSA signature verification failed: {sig_detail}"
+                )
+                trust_result.add_fail(errors[-1])
+        else:
+            errors.append(
+                "TSA signature not verified: no trust roots configured; "
+                "external anchoring unavailable"
+            )
+            trust_result.add_fail(errors[-1])
+
+        # Signature/trust flags consumed by the E4 grade gate: a signature
+        # verified against operator-supplied roots is BOTH cryptographic
+        # authentication (signature_verified) and chain trust
+        # (trust_verified). They are only True when OpenSSL verified the
+        # token against the configured roots.
+        signature_verified = sig_valid
+        trust_verified = sig_valid and trust_result.passed
 
         overall_valid = (
             len(errors) == 0
@@ -289,6 +434,8 @@ def verify_timestamp(
 
         return TimestampResult(
             valid=overall_valid,
+            signature_verified=signature_verified,
+            trust_verified=trust_verified,
             tst_info=tst_info,
             cert_chain=cert_chain,
             imprint_matches=imprint_matches,

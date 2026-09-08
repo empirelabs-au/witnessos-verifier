@@ -142,11 +142,18 @@ class TrustPolicy:
     # --- Policy checks ---
 
     def is_tsa_allowed(self, tsa_url: Optional[str]) -> bool:
-        """Check if a TSA URL is in the provider allowlist."""
+        """Check if a TSA URL is in the provider allowlist.
+
+        DEMO trusts anything. STANDARD treats the operator-supplied trust
+        roots as the provider anchor, so an empty allowlist means "any TSA
+        whose chain verifies to the configured roots" — the allowlist is an
+        ADDITIONAL constraint, applied only when the operator configured one.
+        STRICT additionally requires an explicit allowlist (fail closed).
+        """
         if self.level == TrustLevel.DEMO:
             return True
         if not self.allowed_tsa_urls:
-            return False
+            return self.level != TrustLevel.STRICT
         return tsa_url in self.allowed_tsa_urls
 
     def is_hash_algorithm_allowed(self, oid: str) -> bool:

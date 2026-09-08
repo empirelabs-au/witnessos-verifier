@@ -115,3 +115,73 @@ class TestE4RequiresE3:
             alpha_mode=True,
         )
         assert gr2.grade != "E4" and gr2.grade != "E3"
+
+
+class TestWormRetentionBinding:
+    """Authenticated retention requires a REAL verified anchor, not a
+    matching root string (2026-09-08 Phase-2 fixes)."""
+
+    def test_retention_requires_anchor_verified(self, tmp_path):
+        from witnessos_verifier.worm import verify_worm_bundle
+        import json, hashlib
+
+        # Minimal evidence + worm store binding to root "abc"
+        ev = tmp_path / "evidence"; ev.mkdir()
+        (ev / "event.json").write_text('{"a":1}')
+        worm = ev / "worm"; worm.mkdir()
+        files = sorted(p for p in ev.rglob("*") if p.is_file() and p.relative_to(ev).parts[0] != "worm")
+        h = hashlib.sha256()
+        for f in files: h.update(f.read_bytes())
+        store = {
+            "batch_id": "b1", "stored_hash": h.hexdigest(),
+            "stored_at": "2026-01-01T00:00:00Z", "case_id": "c1",
+            "file_count": len(files), "file_hashes": {}, "anchored_root": "abc",
+        }
+        (worm / "batch_store.json").write_text(json.dumps(store))
+
+        # Binding matches but anchor NOT verified -> retention fails closed
+        r1 = verify_worm_bundle(worm, ev, anchored_root="abc", anchor_verified=False)
+        assert not r1.retention_verified
+        assert not r1.valid
+
+        # Binding matches AND anchor verified -> retention authenticated
+        r2 = verify_worm_bundle(worm, ev, anchored_root="abc", anchor_verified=True)
+        assert r2.retention_verified
+        assert r2.valid
+
+    def test_retention_rejects_wrong_root(self, tmp_path):
+        from witnessos_verifier.worm import verify_worm_bundle
+        import json, hashlib
+
+        ev = tmp_path / "evidence"; ev.mkdir()
+        (ev / "event.json").write_text('{"a":1}')
+        worm = ev / "worm"; worm.mkdir()
+        files = sorted(p for p in ev.rglob("*") if p.is_file() and p.relative_to(ev).parts[0] != "worm")
+        h = hashlib.sha256()
+        for f in files: h.update(f.read_bytes())
+        store = {
+            "batch_id": "b1", "stored_hash": h.hexdigest(),
+            "stored_at": "2026-01-01T00:00:00Z", "case_id": "c1",
+            "file_count": len(files), "file_hashes": {}, "anchored_root": "evil",
+        }
+        (worm / "batch_store.json").write_text(json.dumps(store))
+        r = verify_worm_bundle(worm, ev, anchored_root="abc", anchor_verified=True)
+        assert not r.retention_verified
+        assert not r.valid
+
+    def test_e2e_gmail_e4_green_with_roots(self, bundle_path):
+        """The genuine E4 fixture must grade E4 end-to-end when trust roots
+        are supplied (Phase-1 TSA + Phase-2 retention both authenticated)."""
+        from witnessos_verifier.verifier import verify
+        from witnessos_verifier.trust_policy import TrustPolicy, TrustLevel
+        from pathlib import Path
+
+        root_pem = Path("trust/freetsa/freetsa-root.pem")
+        if not root_pem.exists():
+            return  # trust material absent in this checkout — skip
+        pol = TrustPolicy(level=TrustLevel.STANDARD, trusted_roots=[root_pem])
+        result = verify(bundle_path, policy=pol)
+        assert result.valid, f"expected valid E4, got errors: {result.errors}"
+        assert result.grade.grade == "E4"
+        assert result.timestamp_result.signature_verified
+        assert result.worm_result.retention_verified

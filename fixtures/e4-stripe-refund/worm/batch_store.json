@@ -18,5 +18,6 @@
     "timestamp/batch_timestamp.tsr": "a72c4f727d60a1fc78ab383b03ba2a8cbc5899a16f051223cdb895a07bba539f"
   },
   "stored_at": "2026-06-28T05:37:30Z",
-  "stored_hash": "490f8667a2036f4d34b2838cb07231bacbada0ca5f0c6dc52999948d5bd0d81f"
+  "stored_hash": "490f8667a2036f4d34b2838cb07231bacbada0ca5f0c6dc52999948d5bd0d81f",
+  "anchored_root": "8f8fb08f6759c22ec81355f92ae4b2b42137f8eff23ad8028525cef29be48b9b"
 }

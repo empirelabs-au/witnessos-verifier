@@ -18,6 +18,7 @@ from .ledger import verify_ledger_sequence, LedgerResult
 from .manifest import BatchManifest, verify_manifest, ManifestResult
 from .merkle import MerkleError
 from .timestamp import verify_timestamp, TimestampResult, TimestampError
+from .trust_policy import TrustPolicy, DEFAULT_POLICY
 from .worm import verify_worm_bundle, WormResult, WormError
 
 
@@ -88,7 +89,11 @@ class VerifyResult:
         return "\n".join(lines)
 
 
-def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
+def verify(
+    bundle_path: Path,
+    alpha_mode: bool = False,
+    policy: Optional[TrustPolicy] = None,
+) -> VerifyResult:
     """Verify a WitnessOS evidence bundle.
 
     The bundle must contain:
@@ -98,6 +103,11 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
     - batch_manifest.json  Batch manifest with signature
     - timestamp/         RFC 3161 timestamp token(s)
     - worm/              WORM evidence bundle
+
+    policy: optional TrustPolicy. When trust roots are configured, the
+    RFC 3161 CMS signature is cryptographically verified with OpenSSL.
+    When no roots are configured, timestamp authentication is unavailable
+    and the verifier fails closed (no unauthenticated E4).
 
     Returns a VerifyResult with grade and all sub-results.
     """
@@ -199,7 +209,11 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
 
             if expected_hash:
                 try:
-                    timestamp_result = verify_timestamp(ts_files[0], expected_hash)
+                    timestamp_result = verify_timestamp(
+                        ts_files[0],
+                        expected_hash,
+                        policy=policy if policy is not None else DEFAULT_POLICY,
+                    )
                 except Exception as e:
                     errors.append(f"Timestamp verification error: {e}")
             else:
@@ -212,7 +226,26 @@ def verify(bundle_path: Path, alpha_mode: bool = False) -> VerifyResult:
     worm_dir = bundle_path / "worm"
     if worm_dir.exists():
         try:
-            worm_result = verify_worm_bundle(worm_dir, bundle_path)
+            anchored_root = None
+            if manifest_path.exists():
+                try:
+                    with open(manifest_path) as f:
+                        anchored_root = json.load(f).get("root")
+                except Exception:
+                    pass
+            # Retention is only authenticated when the timestamp anchor was
+            # itself cryptographically verified against operator roots.
+            anchor_verified = bool(
+                timestamp_result
+                and timestamp_result.signature_verified
+                and timestamp_result.trust_verified
+            )
+            worm_result = verify_worm_bundle(
+                worm_dir,
+                bundle_path,
+                anchored_root=anchored_root,
+                anchor_verified=anchor_verified,
+            )
         except Exception as e:
             errors.append(f"WORM verification error: {e}")
 

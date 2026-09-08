@@ -9,7 +9,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 class WormError(Exception):
@@ -25,6 +25,7 @@ class WormBundle:
     case_id: str
     file_count: int
     file_hashes: Dict[str, str]
+    anchored_root: Optional[str] = None
 
 
 @dataclass
@@ -51,16 +52,29 @@ def load_worm_bundle(worm_dir: Path) -> WormBundle:
         case_id=data.get("case_id", ""),
         file_count=data.get("file_count", 0),
         file_hashes=data.get("file_hashes", {}),
+        anchored_root=data.get("anchored_root"),
     )
 
 
-def verify_worm_bundle(worm_dir: Path, evidence_dir: Path) -> WormResult:
+def verify_worm_bundle(
+    worm_dir: Path,
+    evidence_dir: Path,
+    anchored_root: Optional[str] = None,
+    anchor_verified: bool = False,
+) -> WormResult:
     """Verify a WORM evidence bundle against the original evidence.
 
     Checks:
     1. The WORM bundle file exists
     2. The stored hash matches the current evidence
     3. The file count matches
+    4. (E4 retention) The WORM record binds to the RFC 3161-anchored
+       Merkle root AND that anchor was cryptographically verified
+       (``anchor_verified``). A WORM copy is authenticated retention only
+       when the external anchor covers it: the TSA anchor (verified
+       independently against operator roots) proves the stored copy
+       existed, unchanged, at anchor time. A matching root string is NOT
+       retention evidence by itself — the anchor must be real.
     """
     errors = []
 
@@ -97,10 +111,39 @@ def verify_worm_bundle(worm_dir: Path, evidence_dir: Path) -> WormResult:
             f"current={current_count}"
         )
 
+    # Retention authenticity: the WORM record must bind to an anchored root
+    # AND that anchor must have been cryptographically verified.
+    retention_verified = False
+    if not anchored_root:
+        errors.append(
+            "WORM retention not authenticated: no anchored root supplied "
+            "for comparison"
+        )
+    elif not bundle.anchored_root:
+        errors.append(
+            "WORM retention not authenticated: record does not bind to an "
+            "anchored Merkle root"
+        )
+    elif bundle.anchored_root != anchored_root:
+        errors.append(
+            "WORM retention not authenticated: record binds to "
+            f"{bundle.anchored_root[:16]}... but the verified anchor root is "
+            f"{anchored_root[:16]}..."
+        )
+    elif not anchor_verified:
+        errors.append(
+            "WORM retention not authenticated: the anchor root was not "
+            "cryptographically verified (no trusted roots / signature "
+            "verification did not run)"
+        )
+    else:
+        retention_verified = True
+
     return WormResult(
         valid=len(errors) == 0,
         bundle=bundle,
         hash_matches=hash_ok,
         file_count_matches=count_ok,
         errors=errors,
+        retention_verified=retention_verified,
     )
