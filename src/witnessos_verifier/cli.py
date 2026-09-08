@@ -21,8 +21,8 @@ def main():
 
     This verifier reads WitnessOS evidence bundles and cryptographically
     checks event signatures, hash chains, and signed batch/Merkle binding.
-    Timestamp authentication and remote WORM retention are unavailable;
-    this release cannot substantiate E4.
+    E4 requires an operator trust policy, an authenticated RFC 3161 timestamp,
+    and a signed receipt from an independently trusted retention custodian.
 
     No gateway, credential broker, or key management code is included.
     """
@@ -34,7 +34,11 @@ def main():
 @click.option("--json", "output_json", is_flag=True, help="Output results as JSON")
 @click.option("--quiet", "-q", is_flag=True, help="Only print PASS/FAIL")
 @click.option("--alpha", "alpha_mode", is_flag=True, help="Alpha mode: cap max evidence grade at E3")
-def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool, alpha_mode: bool = False):
+@click.option('--trust-policy', type=click.Path(exists=True, dir_okay=False, path_type=Path), help='Operator policy outside the bundle')
+@click.option('--tsa-url', help='Expected TSA URL from operator configuration')
+@click.option('--expected-nonce', type=int, help='Nonce retained from the original timestamp request')
+def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool, alpha_mode: bool = False,
+               trust_policy=None, tsa_url=None, expected_nonce=None):
     """Verify a WitnessOS evidence bundle.
 
     BUNDLE_PATH: Path to the evidence bundle directory containing
@@ -42,8 +46,13 @@ def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool, alpha_mode: bo
     timestamp/, and worm/.
     """
     try:
-        result = verify(bundle_path, alpha_mode=alpha_mode)
-    except VerifyError as e:
+        from .trust_policy import TrustPolicy
+        if trust_policy and trust_policy.resolve().is_relative_to(bundle_path.resolve()):
+            raise VerifyError('Trust policy must be provisioned outside the evidence bundle')
+        policy = TrustPolicy.from_json(trust_policy) if trust_policy else None
+        result = verify(bundle_path, alpha_mode=alpha_mode, trust_policy=policy,
+                        tsa_url=tsa_url, expected_nonce=expected_nonce)
+    except (VerifyError, ValueError, TypeError, OSError) as e:
         click.echo(f"ERROR: {e}", err=True)
         sys.exit(2)
 
@@ -57,6 +66,9 @@ def verify_cmd(bundle_path: Path, output_json: bool, quiet: bool, alpha_mode: bo
             "ledger_valid": result.ledger_result.sequence_monotonic if result.ledger_result else None,
             "manifest_valid": result.manifest_result.valid if result.manifest_result else None,
             "timestamp_valid": result.timestamp_result.valid if result.timestamp_result else None,
+            "timestamp_signature_verified": result.timestamp_result.signature_verified if result.timestamp_result else False,
+            "timestamp_trust_verified": result.timestamp_result.trust_verified if result.timestamp_result else False,
+            "retention_verified": result.worm_result.retention_verified if result.worm_result else False,
             "worm_valid": result.worm_result.valid if result.worm_result else None,
             "errors": result.errors,
             "warnings": result.warnings,

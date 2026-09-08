@@ -1,4 +1,4 @@
-> **Current limitation:** External timestamp authentication and authenticated WORM retention are unavailable. Earlier E4 claims below are historical and must not be used as launch assurances. See [ATTACK-REVIEW.md](ATTACK-REVIEW.md).
+> **Current verification contract:** Real TSA authentication and signed independent custodian receipts are supported with explicit operator trust. STRICT revocation remains unavailable. Historical assurance claims below must be read with [E4-BUNDLE-FORMAT.md](E4-BUNDLE-FORMAT.md).
 
 # Security Assessment
 

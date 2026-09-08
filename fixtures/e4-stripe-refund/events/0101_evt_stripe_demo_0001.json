@@ -12,10 +12,19 @@
     "risk_class": "refund",
     "rule_id": "stripe-financial-refund-v1"
   },
-  "prev_hash": "cd7fe10deb6cbbb09362075cee389553f75557f32101236b8d46cb7c40bca4d5",
+  "prev_hash": "60ece12e7df960978ef57b71c266f3f9f6b87face66b5ba23b8bf4ce1880ea8b",
   "seq": 101,
   "signed": {
+    "algorithm": "Ed25519",
     "key_id": "key_stripe_demo_001",
-    "signature": "5iRLdFqsLhaZPyYzcNIGHfXdbFlURH4wBcB8Rcq9viBACbexCyU+nOaMr2TqsfdxGJOLv8cEQFBZjzeCB5/1DQ=="
+    "signed_headers": [
+      "case_id",
+      "event_id",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "seq"
+    ],
+    "signature": "gUmj1F0tquTa9mjMC62x3Gus7pWlmxPGQlqpGoauX1bGzt0Yl1wY/GCoRJbvvcnrBfiJlh7HeuGNHkqdqECxBw=="
   }
 }
