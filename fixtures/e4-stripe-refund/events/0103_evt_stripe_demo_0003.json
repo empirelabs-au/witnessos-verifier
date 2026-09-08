@@ -7,10 +7,19 @@
     "endpoint": "https://api.stripe.com/v1/refunds",
     "permit_jti": "demo_permit_001"
   },
-  "prev_hash": "4498cb71a366a2c20691b33900755ff5d3986c99142396b89b48cdf331b065d4",
+  "prev_hash": "c5653a0fd23ddef39d59498694b8b419c7ffa8e41f90b797bf49b77f0ea2864f",
   "seq": 103,
   "signed": {
+    "algorithm": "Ed25519",
     "key_id": "key_stripe_demo_001",
-    "signature": "dHeZFtjSNHM2g3t7QJphtQLIz/Ai+OmuwJ2PibZTfRoHOvyIwKrp3TsB6Uvp90lq8GjFXUq6Pt3+zX0E2t4GAw=="
+    "signed_headers": [
+      "case_id",
+      "event_id",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "seq"
+    ],
+    "signature": "xhw/ZQ7VMRMQgtgX4RIO4h7/XtnZ/Wgrv1AeywXtPoLEuwhqxoE4ql4P3kTrdKas1JkGaT99JBdliQQOJJrWBw=="
   }
 }

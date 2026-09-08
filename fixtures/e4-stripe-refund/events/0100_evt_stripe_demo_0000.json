@@ -15,7 +15,16 @@
   "prev_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "seq": 100,
   "signed": {
+    "algorithm": "Ed25519",
     "key_id": "key_stripe_demo_001",
-    "signature": "ppR8jiAHmWNRiuRphMAwBOc0oKD8dUSCu6VK4QskJjPzbJS3hyOFfgKFtgKioKYGIvW9TyojxaWkwT+Bz0JpBw=="
+    "signed_headers": [
+      "case_id",
+      "event_id",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "seq"
+    ],
+    "signature": "XvU1lg/caLbUNoSFQEc+W5fNkrMnTfgXGrzIoutLr/fOZjukX5UPKYN/T0wBMF+JWQPpMJmJTxf7LSdXuTZaBQ=="
   }
 }

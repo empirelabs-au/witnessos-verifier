@@ -1,7 +1,9 @@
 {
   "batch_id": "batch_stripe_demo_e4_001",
+  "signing_key_id": "key_stripe_demo_001",
   "case_id": "demo_stripe_refund_2026_001",
-  "end_seq": 106,
+  "root": "2f99b1b1846daf58864aa28ce32e28a0c7510b00591f98c3b85604ba8964ee7b",
+  "prev_root": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "event_ids": [
     "evt_stripe_demo_0000",
     "evt_stripe_demo_0001",
@@ -11,10 +13,8 @@
     "evt_stripe_demo_0005",
     "evt_stripe_demo_0006"
   ],
-  "prev_root": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "root": "8f8fb08f6759c22ec81355f92ae4b2b42137f8eff23ad8028525cef29be48b9b",
-  "signature": "yM4phzbixcILp9kbnJgdwXRMhupPSHLWpNLKY0Yj417I48ojdcInrAqKMZUnbdCOfyDVinlVPPJNx72r5ZKDDA==",
-  "signed_at": "2026-06-28T05:37:30Z",
-  "signing_key_id": "key_stripe_demo_001",
-  "start_seq": 100
+  "start_seq": 100,
+  "end_seq": 106,
+  "signed_at": "2026-09-08T00:39:00Z",
+  "signature": "5IUcRJbdME0GhHH2dJvgKZHxQePKBLFe3bh5wLyGSa/d/QBAzIw5FV3XA4fUqKwm5XQ8scuAgOAuP0/OPZz9Aw=="
 }

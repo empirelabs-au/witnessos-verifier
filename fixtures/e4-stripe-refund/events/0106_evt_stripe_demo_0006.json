@@ -7,10 +7,19 @@
     "merkle_checkpoint": "demo_merkle_root_placeholder",
     "timestamp_token": "pending_tsa"
   },
-  "prev_hash": "dbdc4d59aa9069ad855b052fdcd0847889f77552176ae034a42460deb3b976ee",
+  "prev_hash": "845cefc7d8c5c7e009771ce426789a6d9c4fcd13389239827c3ad6222d029cd2",
   "seq": 106,
   "signed": {
+    "algorithm": "Ed25519",
     "key_id": "key_stripe_demo_001",
-    "signature": "wOQkXsZOv6zoh65493Wib7C98C2IJeWqCgBVqlJoiplYilL6f3243EL8+LG+SHbBd53/SW4k6g1jfexzcW7ADQ=="
+    "signed_headers": [
+      "case_id",
+      "event_id",
+      "event_type",
+      "payload",
+      "prev_hash",
+      "seq"
+    ],
+    "signature": "M/i7hWvdYkqrTyqvq++flPf39np++VctRgZMGYoTbIDzIMemF8tAJtURaDYTOmcGjuSnj+FV5l6c/+MWknN7Ag=="
   }
 }

@@ -31,9 +31,13 @@ class TestE3VocabularyBothForms:
         from witnessos_verifier.events import load_events
         from witnessos_verifier.verifier import PROVIDER_ACK_TYPES
         assert any(e.event_type in PROVIDER_ACK_TYPES for e in load_events(stripe))
+        # Without trust roots: dot-vocab fixture fails closed at E3 (TSA not
+        # verified) — never E1 — proving the E3 vocabulary check passes and
+        # the merkle binding is now correct (fixture regenerated 2026-09-08).
         result = verify(stripe)
         assert not result.valid
-        assert "Loaded events do not match signed Merkle root" in result.errors
+        assert result.grade.grade == "E3", f"expected E3, got {result.grade.grade}"
+        assert "Loaded events do not match signed Merkle root" not in result.errors
 
     def test_dot_vocabulary_confirmed(self):
         from witnessos_verifier.grades import derive_grade
