@@ -45,7 +45,9 @@ OID_RSA_SHA256 = "1.2.840.113549.1.1.11"
 OID_ECDSA_SHA256 = "1.2.840.10045.4.3.2"
 
 ALLOWED_HASH_ALGORITHMS = {OID_SHA256, OID_SHA384, OID_SHA512}
-ALLOWED_SIGNATURE_ALGORITHMS = {OID_RSA_SHA256, OID_ECDSA_SHA256}
+ALLOWED_SIGNATURE_ALGORITHMS = {OID_RSA_SHA256, OID_ECDSA_SHA256,
+    "1.2.840.113549.1.1.12", "1.2.840.113549.1.1.13",
+    "1.2.840.10045.4.3.3", "1.2.840.10045.4.3.4"}
 
 
 class TrustLevel(Enum):
@@ -77,6 +79,16 @@ class TrustPolicy:
 
     # Trusted root CA certificates (PEM paths)
     trusted_roots: List[Path] = field(default_factory=list)
+
+    # Untrusted TSA/intermediate certificates, needed when tokens omit certificates.
+    untrusted_certificates: List[Path] = field(default_factory=list)
+    # Optional explicit timestamp acceptance window (UTC ISO 8601).
+    timestamp_not_before: Optional[datetime] = None
+    timestamp_not_after: Optional[datetime] = None
+    max_timestamp_age_seconds: Optional[int] = None
+    # Independently provisioned retention-authority public keys, never loaded from a bundle.
+    retention_authorities: Dict[str, str] = field(default_factory=dict)
+    minimum_retention_seconds: int = 0
 
     # Required Extended Key Usage
     required_eku: str = OID_TIME_STAMPING
@@ -116,13 +128,19 @@ class TrustPolicy:
             data = json.load(f)
 
         level = TrustLevel(data.get("level", "demo"))
-        trusted_roots = [Path(p) for p in data.get("trusted_roots", [])]
+        trusted_roots = [(path.parent / p).resolve() for p in data.get("trusted_roots", [])]
 
         return cls(
             level=level,
             label=data.get("label", "custom"),
             allowed_tsa_urls=set(data.get("allowed_tsa_urls", [])),
             trusted_roots=trusted_roots,
+            untrusted_certificates=[(path.parent / p).resolve() for p in data.get("untrusted_certificates", [])],
+            timestamp_not_before=parse_utc(data["timestamp_not_before"]) if data.get("timestamp_not_before") else None,
+            timestamp_not_after=parse_utc(data["timestamp_not_after"]) if data.get("timestamp_not_after") else None,
+            max_timestamp_age_seconds=data.get("max_timestamp_age_seconds"),
+            retention_authorities=data.get("retention_authorities", {}),
+            minimum_retention_seconds=data.get("minimum_retention_seconds", 0),
             required_eku=data.get("required_eku", OID_TIME_STAMPING),
             allowed_hash_algorithms=set(
                 data.get("allowed_hash_algorithms", ALLOWED_HASH_ALGORITHMS)
@@ -246,3 +264,11 @@ class TrustPolicyResult:
 
 
 DEFAULT_POLICY = TrustPolicy.demo()
+
+
+def parse_utc(value: str) -> datetime:
+    """Parse an explicit, timezone-aware instant; never assume local timezone."""
+    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        raise ValueError('Timestamp must include a timezone')
+    return dt.astimezone(timezone.utc)
