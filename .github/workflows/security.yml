@@ -25,12 +25,21 @@ jobs:
       - uses: github/codeql-action/analyze@v4
         with:
           upload: never
+          # Without an explicit output path the SARIF is written to ../results
+          # (outside the checkout), so the gate below globbed an empty dir and
+          # reported "clean" unconditionally. Pin it inside the workspace.
+          output: results
       - name: Fail on CodeQL findings (SARIF gate)
         run: |
           python3 - <<'EOF'
-          import json, glob, sys
+          import json, glob, os, sys
+          files = sorted(glob.glob('results/*.sarif'))
+          if not files:
+              sys.exit("SAST gate: no SARIF files found under results/ - cannot verify, failing closed")
+          print(f"SAST gate: inspecting {len(files)} SARIF file(s): "
+                f"{[os.path.basename(f) for f in files]}")
           findings = []
-          for f in glob.glob('results/*.sarif'):
+          for f in files:
               with open(f) as fh:
                   sarif = json.load(fh)
               for run in sarif.get('runs', []):
@@ -45,7 +54,7 @@ jobs:
               for x in findings[:20]:
                   print("  -", x)
               sys.exit(1)
-          print("CodeQL clean: no error/warning findings")
+          print(f"CodeQL clean: no error/warning findings across {len(files)} SARIF file(s)")
           EOF
 
   sca:

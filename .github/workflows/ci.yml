@@ -10,6 +10,20 @@ permissions:
   contents: read
 
 jobs:
+  workflows-lint:
+    name: Workflows lint (actionlint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned + checksum-verified through the Go module proxy (sum.golang.org).
+      # Catches the class of bug that silently killed release runs on 20 Aug 2026:
+      # an invalid expression (${{ GITHUB_REF_NAME }}) makes GitHub reject the whole
+      # workflow file, producing a zero-job "workflow file issue" failure.
+      - name: Install actionlint
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Lint .github/workflows
+        run: $(go env GOPATH)/bin/actionlint -color
+
   dco:
     runs-on: ubuntu-latest
     steps:
