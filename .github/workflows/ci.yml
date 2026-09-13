@@ -21,8 +21,10 @@ jobs:
       # workflow file, producing a zero-job "workflow file issue" failure.
       - name: Install actionlint
         run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-      - name: Lint .github/workflows
-        run: $(go env GOPATH)/bin/actionlint -color
+      - name: Lint workflows
+        run: |
+          ACTIONLINT="$(go env GOPATH)/bin/actionlint"
+          "$ACTIONLINT" -color
 
   dco:
     runs-on: ubuntu-latest

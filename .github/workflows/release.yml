@@ -72,7 +72,7 @@ jobs:
 
       - name: Create checksums
         run: |
-          cd dist && sha256sum * > SHA256SUMS && cd ..
+          cd dist && sha256sum -- * > SHA256SUMS && cd ..
           # also include the SBOM and signature files in the checksum file
           sha256sum sbom.cdx.json sbom.cdx.json.sig sbom.cdx.json.pem dist/*.sig dist/*.pem >> dist/SHA256SUMS 2>/dev/null || true
 
