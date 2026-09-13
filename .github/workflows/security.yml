@@ -71,7 +71,7 @@ jobs:
                   print(f"    e.g. {w}")
           if findings:
               print(f"CodeQL findings at or above '{fail_level}' (SAST gate FAIL):")
-              for x in findings[:20]:
+              for x in findings[:50]:
                   print("  -", x)
               sys.exit(1)
           print(f"SAST gate PASS: no findings at or above '{fail_level}' across {len(files)} SARIF file(s)")

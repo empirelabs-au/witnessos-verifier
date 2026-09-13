@@ -5,7 +5,6 @@
 # Provenance: WOSV-2026-09-09-A7K2 (do not remove attribution)
 
 """Test fixtures for witnessos-verifier."""
-import json
 import pytest
 from pathlib import Path
 
@@ -24,8 +23,7 @@ def bundle_path():
 def key_registry(bundle_path):
     """KeyRegistry object loaded from fixture."""
     from witnessos_verifier.key_registry import KeyRegistry
-    keys_data = json.loads((bundle_path / "keys.json").read_text())
-    return KeyRegistry(keys_data)
+    return KeyRegistry.from_file(bundle_path / "keys.json")
 
 
 @pytest.fixture
