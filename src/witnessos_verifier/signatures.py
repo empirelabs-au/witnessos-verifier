@@ -11,8 +11,7 @@ Uses PyNaCl for Ed25519 operations.
 """
 
 import base64
-import hashlib
-from typing import Dict, Optional
+from typing import Dict
 
 import nacl.exceptions
 import nacl.signing

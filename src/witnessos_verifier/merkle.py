@@ -117,7 +117,7 @@ class ConsistencyProof:
         left_proof = proof[0] if proof else None
         if left_proof is None:
             return False
-        rest = proof[1:] if len(proof) > 1 else []
+        # Right-hand subtree nodes (proof[1:]) are not consumed by this simplified path.
         # Left subtree: first k nodes, compute its root from old_root
         # Right subtree: remaining nodes
         # This requires recursive proof structures — simplified for now

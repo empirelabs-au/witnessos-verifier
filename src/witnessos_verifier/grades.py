@@ -84,8 +84,6 @@ def derive_grade(
         return GradeResult(grade=Grade.E0, display="No evidence loaded",
                           requirements_met=met, requirements_missing=missing)
 
-    grade = Grade.E1
-
     # E2
     e2_ok = True
     if chain_result and chain_result.valid:

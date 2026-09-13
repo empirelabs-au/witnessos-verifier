@@ -11,12 +11,10 @@ the batch signing key. The manifest signature proves the batch
 was produced by an authorised WitnessOS instance.
 """
 
-import base64
-import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from .key_registry import KeyRegistry
 from .signatures import verify_detached_signature

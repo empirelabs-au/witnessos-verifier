@@ -16,7 +16,6 @@ Tests that the DER parser + timestamp verifier properly reject:
 """
 
 import pytest
-from pathlib import Path
 
 
 class TestDERInputValidation:
@@ -101,7 +100,7 @@ class TestOIDValidation:
 
 class TestTrustPolicyValidation:
     def test_demo_policy_allows_all(self):
-        from witnessos_verifier.trust_policy import TrustPolicy, TrustLevel
+        from witnessos_verifier.trust_policy import TrustPolicy
         policy = TrustPolicy.demo()
         assert policy.is_tsa_allowed("https://freetsa.org/tsr")
         assert policy.is_tsa_allowed("https://any-tsa.example.com/tsa")

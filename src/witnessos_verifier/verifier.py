@@ -11,6 +11,7 @@ Verifies a complete WitnessOS evidence bundle end-to-end.
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
@@ -22,10 +23,11 @@ from .grades import derive_grade, GradeResult
 from .key_registry import KeyRegistry, KeyRegistryError
 from .ledger import verify_ledger_sequence, LedgerResult
 from .manifest import BatchManifest, verify_manifest, ManifestResult
-from .merkle import MerkleError
-from .timestamp import verify_timestamp, TimestampResult, TimestampError
-from .worm import verify_worm_bundle, WormResult, WormError
+from .timestamp import verify_timestamp, TimestampResult
+from .worm import verify_worm_bundle, WormResult
 
+
+logger = logging.getLogger(__name__)
 
 PROVIDER_ACK_TYPES = frozenset({"provider.acknowledged", "provider.confirmed",
                                 "provider_acknowledged", "provider_confirmed"})
@@ -211,8 +213,10 @@ def verify(bundle_path: Path, alpha_mode: bool = False, *, trust_policy=None, ts
                             # TSA timestamps SHA-256(root), not root directly
                             root_bytes = bytes.fromhex(root)
                             expected_hash = hashlib.sha256(root_bytes).digest()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(
+                        f"Could not derive expected timestamp imprint from manifest: {e}"
+                    )
 
             if expected_hash:
                 try:

@@ -6,7 +6,6 @@
 
 """Test Ed25519 signature verification."""
 import base64
-import json
 import nacl.signing
 import nacl.encoding
 

@@ -144,14 +144,14 @@ def read_null(cursor: DerCursor) -> None:
 
 
 def read_sequence(cursor: DerCursor) -> DerCursor:
-    tag = cursor.read_tag(expected=0x30)
+    cursor.read_tag(expected=0x30)
     length = cursor.read_length()
     inner = cursor.read_value(length)
     return DerCursor(inner)
 
 
 def read_set(cursor: DerCursor) -> DerCursor:
-    tag = cursor.read_tag(expected=0x31)
+    cursor.read_tag(expected=0x31)
     length = cursor.read_length()
     inner = cursor.read_value(length)
     return DerCursor(inner)
@@ -171,7 +171,9 @@ def read_bit_string(cursor: DerCursor) -> bytes:
     tag, value = cursor.read_tlv(expected_tag=0x03)
     if not value:
         raise DerError("Empty bit string")
-    unused = value[0]
+    unused_bits = value[0]
+    if unused_bits > 7:
+        raise DerError(f"Invalid BIT STRING unused-bit count: {unused_bits}")
     return value[1:]
 
 
@@ -305,7 +307,7 @@ def validate_tst_info_fields(raw_tst_info: bytes) -> List[str]:
         seen_fields.add("policy")
 
         # messageImprint (SEQUENCE)
-        mi_seq = read_sequence(tst_seq)
+        read_sequence(tst_seq)
         seen_fields.add("messageImprint")
 
         # serialNumber (INTEGER)

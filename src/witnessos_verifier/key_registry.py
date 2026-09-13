@@ -13,7 +13,7 @@ Keys are loaded from the evidence bundle's keys.json file.
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from .signatures import KeyStatus
 

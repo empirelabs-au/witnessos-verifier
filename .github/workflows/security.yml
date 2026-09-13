@@ -31,12 +31,12 @@ jobs:
           output: results
       - name: Fail on CodeQL findings (SARIF gate)
         env:
-          # Blocking threshold. Raise to "warning" once the quality warnings from
-          # queries: security-and-quality are cleaned up - as of 2026-09-13 the
-          # suite reports ~20 of them (py/unused-import, py/empty-except, ...)
-          # which are code hygiene, not vulnerabilities. A gate nobody can keep
-          # green gets switched off, so warnings are reported, not blocking.
-          SAST_FAIL_LEVEL: error
+          # Blocking threshold. Raised from "error" to "warning" on 2026-09-13 once
+          # every warning the security-and-quality suite reported had been cleared
+          # (py/unused-import x11, py/unused-local-variable x5, py/empty-except x3,
+          # py/multiple-definition x1). Warnings block now, so a new finding cannot
+          # slip in unnoticed.
+          SAST_FAIL_LEVEL: warning
         run: |
           python3 - <<'EOF'
           import json, glob, os, sys

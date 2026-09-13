@@ -7,7 +7,6 @@
 """Test event loading and canonical hashing."""
 import json
 import hashlib
-from pathlib import Path
 
 
 class TestEventLoading:

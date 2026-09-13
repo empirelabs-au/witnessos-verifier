@@ -15,8 +15,6 @@ Two bugs were found during the public-verifier audit:
    missing. The documented ladder is cumulative (E4 = E3 + anchor), so a
    bundle without provider acknowledgement must cap below E4.
 """
-import json
-from pathlib import Path
 
 
 class _R:

@@ -79,8 +79,8 @@ class LocalWORM(WORMAdapter):
                 data = json.loads(manifest_path.read_text())
                 self._manifest = data.get("evidence", {})
                 self.hash_chain = data.get("chain", [])
-            except (json.JSONDecodeError, KeyError):
-                pass
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.warning(f"Ignoring unreadable WORM manifest at {manifest_path}: {e}")
 
     def store(self, evidence_id: str, data: bytes) -> str:
         store_path = self.root_dir / evidence_id
@@ -151,7 +151,6 @@ class S3ObjectLockWORM(WORMAdapter):
         try:
             import boto3
             from botocore.config import Config as BotoConfig
-            from botocore.exceptions import ClientError
         except ImportError:
             raise ImportError(
                 "boto3 is required for S3 WORM storage. "
@@ -185,8 +184,11 @@ class S3ObjectLockWORM(WORMAdapter):
             ol_config = self.client.get_object_lock_configuration(
                 Bucket=self.bucket
             )
+            config_mode = ol_config.get("ObjectLockConfiguration", {}).get(
+                "ObjectLockEnabled", "unknown"
+            )
             logger.info(
-                f"S3 bucket '{self.bucket}' confirmed with Object Lock enabled"
+                f"S3 bucket '{self.bucket}' confirmed with Object Lock enabled ({config_mode})"
             )
         except self.client.exceptions.ClientError as e:
             code = e.response["Error"]["Code"]
@@ -278,8 +280,10 @@ class S3ObjectLockWORM(WORMAdapter):
                                     f"Object Lock expired for {key} "
                                     f"(retained until {retention.isoformat()})"
                                 )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(
+                            f"Could not evaluate Object Lock retention for {key}: {e}"
+                        )
 
         except Exception as e:
             issues.append(f"S3 integrity scan failed: {e}")

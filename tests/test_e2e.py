@@ -5,7 +5,6 @@
 # Provenance: WOSV-2026-09-09-A7K2 (do not remove attribution)
 
 """Test end-to-end verification of E4 fixture."""
-import json
 from pathlib import Path
 
 

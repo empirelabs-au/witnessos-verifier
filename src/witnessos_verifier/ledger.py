@@ -11,7 +11,6 @@ monotonic sequence numbers and consistent head hashes.
 """
 
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import List, Optional
 
 from .events import Event

@@ -25,7 +25,7 @@ from asn1crypto import tsp
 from witnessos_verifier.timestamp import verify_timestamp
 from witnessos_verifier.trust_policy import TrustPolicy, TrustLevel
 from witnessos_verifier.verifier import verify
-from witnessos_verifier.worm import canonical_json, snapshot_inventory, verify_retention
+from witnessos_verifier.worm import canonical_json, snapshot_inventory
 from tests.test_adversarial_bundle import rehash_worm
 
 TSA = 'https://freetsa.org/tsr'
