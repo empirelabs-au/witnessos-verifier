@@ -34,6 +34,24 @@ jobs:
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Require a tag ref
+        # Keyless identity is derived from the ref the run executes on, not from
+        # what the job checks out. A dispatch from main would sign with
+        # ...release.yml@refs/heads/main and silently break the identity that
+        # consumers pin, so a release may only originate from a tag ref:
+        #   push a v*.*.* tag, or: gh workflow run release.yml --ref <tag>
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            echo "::error::Release must run from a tag ref; got ${GITHUB_REF}."
+            echo "Push the v*.*.* tag, or dispatch on the tag: gh workflow run release.yml --ref <tag>"
+            exit 1
+          fi
+          if [ -n "${{ inputs.tag }}" ] && [ "${{ inputs.tag }}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::Input tag '${{ inputs.tag }}' does not match the run ref '${GITHUB_REF_NAME}'."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
