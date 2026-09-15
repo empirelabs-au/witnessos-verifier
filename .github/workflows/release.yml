@@ -94,6 +94,13 @@ jobs:
           # also include the SBOM and signature files in the checksum file
           sha256sum sbom.cdx.json sbom.cdx.json.sig sbom.cdx.json.pem dist/*.sig dist/*.pem >> dist/SHA256SUMS 2>/dev/null || true
 
+      - name: Keep the built distributions for publishing
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
@@ -104,3 +111,31 @@ jobs:
             sbom.cdx.json.sig
             sbom.cdx.json.pem
           generate_release_notes: true
+
+  publish:
+    # PyPI trusted publishing (OIDC, no API token, no stored secret).
+    # Held closed until the project's pending publisher exists on PyPI and the
+    # repository variable PYPI_PUBLISH_ENABLED is 'true', so a tag push never
+    # leaves a failed run merely because the publisher is not configured yet.
+    # PyPI publisher fields to match exactly: owner narko4u, repository
+    # witnessos-verifier, workflow release.yml, environment pypi.
+    needs: release
+    if: ${{ vars.PYPI_PUBLISH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Fetch the distributions built by the release job
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          # Fail loudly rather than silently re-attaching to an existing file.
+          attestations: true
