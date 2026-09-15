@@ -1,7 +1,7 @@
 # WitnessOS Verifier
 # Copyright (c) 2026 Empire Labs Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
-# Source: https://github.com/empirelabs-au/witnessos-verifier
+# Source: https://github.com/narko4u/witnessos-verifier
 # Provenance: WOSV-2026-09-09-A7K2 (do not remove attribution)
 
 """WORM storage adapters for WitnessOS evidence retention.

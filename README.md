@@ -159,23 +159,43 @@ signature of an asset:
 ```sh
 # install cosign: https://docs.sigstore.dev/cosign/installation/
 cosign verify-blob \
-  --certificate-identity "https://github.com/narko4u/witnessos-verifier/.github/workflows/release.yml@refs/tags/v*" \
+  --certificate-identity-regexp "^https://github\.com/narko4u/witnessos-verifier/\.github/workflows/release\.yml@refs/(tags/v[0-9]+\.[0-9]+\.[0-9]+|heads/main)$" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   --signature witnessos_verifier-0.2.0-py3-none-any.whl.sig \
   --certificate witnessos_verifier-0.2.0-py3-none-any.whl.pem \
   witnessos_verifier-0.2.0-py3-none-any.whl
 ```
 
+`--certificate-identity` compares against one exact string; the `v*` used in
+earlier revisions of this section was a glob that no certificate ever carried,
+so that command could not have succeeded. Use the regexp form above, or pin
+the exact identity of the release you are checking.
+
 ### 3. Release author identity
 
 Releases are authored by the **Empire Labs Pty Ltd** maintainer team and
 built automatically by the `Release` GitHub Actions workflow in the
-`narko4u/witnessos-verifier` repository (identity
-`https://github.com/narko4u/witnessos-verifier/.github/workflows/release.yml@refs/tags/v*`,
-issuer `https://token.actions.githubusercontent.com`). The Sigstore
-certificate embedded in each `.pem` file binds every asset to exactly this
-workflow and tag - if the certificate identity in step 2 does not match,
-the asset was not produced by this project's release process.
+`narko4u/witnessos-verifier` repository. The Sigstore certificate embedded in
+each `.pem` file binds the asset to that workflow *and* to the git ref the run
+executed on, so the ref is part of the identity:
+
+- Releases published by pushing a `v*.*.*` tag carry
+  `https://github.com/narko4u/witnessos-verifier/.github/workflows/release.yml@refs/tags/<tag>`.
+  The workflow refuses to run from any other ref, so a release cannot be signed
+  under an identity that does not name a tag.
+- `v0.1.0` and `v0.2.0` were published by a manual backfill that executed
+  against `main`, so their certificates carry
+  `...release.yml@refs/heads/main` rather than a tag ref. Those assets are
+  genuine; their identity does not name the tag they belong to.
+
+Either way the issuer is `https://token.actions.githubusercontent.com`, and the
+repository and workflow in the identity must be the ones above - if the
+certificate identity does not match, the asset was not produced by this
+project's release process.
+
+Note the two cosign flags are not interchangeable:
+`--certificate-identity-regexp` accepts a pattern, `--certificate-identity` is
+an exact string comparison.
 
 ### 4. Software Bill of Materials (SBOM)
 
